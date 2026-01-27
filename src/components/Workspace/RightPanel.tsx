@@ -1,7 +1,8 @@
 'use client';
 
 import { Memory, PersonalityMode } from '@/types';
-import { Layers, Database, Shield } from 'lucide-react';
+import { Layers, Database, Shield, Cpu } from 'lucide-react';
+import { getModelById } from '@/lib/models';
 
 interface RightPanelProps {
     memory: Memory | null;
@@ -10,6 +11,9 @@ interface RightPanelProps {
 
 export default function RightPanel({ memory, mode }: RightPanelProps) {
     if (!memory) return null;
+
+    const currentModelId = memory.preferences.currentModelId;
+    const currentModel = getModelById(currentModelId);
 
     return (
         <div className="w-[300px] bg-zinc-950 border-l border-zinc-900 h-full flex flex-col flex-shrink-0">
@@ -33,6 +37,23 @@ export default function RightPanel({ memory, mode }: RightPanelProps) {
                     </div>
                 </div>
 
+                {/* Model Info (NEW) */}
+                <div>
+                    <h3 className="text-xs font-medium text-zinc-400 mb-3 flex items-center gap-2">
+                        <Cpu size={12} />
+                        MODEL ENGINE
+                    </h3>
+                    <div className="bg-zinc-900/50 border border-zinc-900 rounded-lg p-3">
+                        <div className="text-sm font-medium text-zinc-200 mb-1">{currentModel?.name || 'Unknown Model'}</div>
+                        <p className="text-[10px] text-zinc-500 leading-relaxed mb-2">
+                            {currentModel?.description}
+                        </p>
+                        <div className="inline-flex items-center px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-400 text-[10px] border border-blue-500/20">
+                            {currentModel?.role.toUpperCase()}
+                        </div>
+                    </div>
+                </div>
+
                 {/* Privacy Badge */}
                 <div>
                     <h3 className="text-xs font-medium text-zinc-400 mb-3 flex items-center gap-2">
@@ -47,24 +68,6 @@ export default function RightPanel({ memory, mode }: RightPanelProps) {
                         <p className="text-[10px] text-zinc-600 mt-2 leading-relaxed">
                             No personal data is stored. Context is cleared upon refresh.
                         </p>
-                    </div>
-                </div>
-
-                {/* System Stats */}
-                <div>
-                    <h3 className="text-xs font-medium text-zinc-400 mb-3 flex items-center gap-2">
-                        <Database size={12} />
-                        SYSTEM
-                    </h3>
-                    <div className="bg-zinc-900/50 rounded-lg p-3 space-y-2">
-                        <div className="flex justify-between text-xs">
-                            <span className="text-zinc-500">Session</span>
-                            <span className="text-zinc-300">Active</span>
-                        </div>
-                        <div className="flex justify-between text-xs">
-                            <span className="text-zinc-500">Model</span>
-                            <span className="text-zinc-300">Llama 3.3 70B</span>
-                        </div>
                     </div>
                 </div>
             </div>

@@ -2,8 +2,9 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { Message, PersonalityMode, Memory } from '@/types';
-import { loadMemory, saveMemory, addMessage, setMode, resetMemory, getRecentContext } from '@/lib/memory';
+import { loadMemory, saveMemory, addMessage, setMode, setModel, resetMemory, getRecentContext } from '@/lib/memory';
 import { detectIntent, getHelpMessage, getPromptEngineerResponse, getThoughtDumpResponse } from '@/lib/ai-engine';
+import { DEFAULT_MODEL_ID } from '@/lib/models';
 import ChatContainer from '@/components/Chat/ChatContainer';
 import Sidebar from '@/components/Workspace/Sidebar';
 import RightPanel from '@/components/Workspace/RightPanel';
@@ -26,6 +27,7 @@ export default function Home() {
   }, [memory]);
 
   const currentMode = memory?.preferences.currentMode ?? 'bestfriend';
+  const currentModelId = memory?.preferences.currentModelId ?? DEFAULT_MODEL_ID;
   const messages = memory?.conversations ?? [];
 
   const createMessage = (content: string, role: 'user' | 'assistant'): Message => ({
@@ -39,6 +41,12 @@ export default function Home() {
   const handleModeChange = useCallback((newMode: PersonalityMode) => {
     if (!memory) return;
     const updatedMemory = setMode(memory, newMode);
+    setMemory(updatedMemory);
+  }, [memory]);
+
+  const handleModelChange = useCallback((newModelId: string) => {
+    if (!memory) return;
+    const updatedMemory = setModel(memory, newModelId);
     setMemory(updatedMemory);
   }, [memory]);
 
@@ -98,6 +106,7 @@ export default function Home() {
         body: JSON.stringify({
           message: input,
           mode: currentMode,
+          model: currentModelId, // Pass the selected model
           history: getRecentContext(updatedMemory, 10)
         })
       });
@@ -123,7 +132,7 @@ export default function Home() {
     } finally {
       setIsLoading(false);
     }
-  }, [memory, currentMode, handleModeChange, handleReset]);
+  }, [memory, currentMode, currentModelId, handleModeChange, handleReset]);
 
   if (!memory) {
     return (
@@ -138,7 +147,9 @@ export default function Home() {
       {/* 1. Left Sidebar */}
       <Sidebar
         currentMode={currentMode}
+        currentModelId={currentModelId}
         onModeChange={handleModeChange}
+        onModelChange={handleModelChange}
         onReset={handleReset}
       />
 

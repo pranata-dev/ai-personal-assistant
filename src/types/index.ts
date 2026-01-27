@@ -13,6 +13,7 @@ export interface UserPreferences {
   language: 'id' | 'en';
   explanationStyle: ExplanationStyle;
   currentMode: PersonalityMode;
+  currentModelId: string; // New field for model selection
 }
 
 export interface Memory {

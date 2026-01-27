@@ -1,121 +1,126 @@
 import { NextResponse } from 'next/server';
-import { PersonalityMode, Message } from '@/types';
 import { getSystemPrompt, formatConversationHistory } from '@/lib/ai-engine';
-import { searchWeb, shouldSearch, formatSearchResults } from '@/lib/web-search';
+import { searchWeb as performWebSearch } from '@/lib/web-search';
+import { PersonalityMode } from '@/types';
+import { DEFAULT_MODEL_ID } from '@/lib/models';
 
+const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
 const OPENROUTER_API_URL = 'https://openrouter.ai/api/v1/chat/completions';
-
-// Helper to wait
-const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
-
-async function callOpenRouter(messages: { role: string; content: string }[], apiKey: string, retries = 3): Promise<Response> {
-    for (let attempt = 1; attempt <= retries; attempt++) {
-        const response = await fetch(OPENROUTER_API_URL, {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${apiKey}`,
-                'Content-Type': 'application/json',
-                'HTTP-Referer': process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000',
-                'X-Title': 'AI Personal Assistant'
-            },
-            body: JSON.stringify({
-                model: process.env.OPENROUTER_MODEL || 'meta-llama/llama-3.3-70b-instruct:free',
-                messages,
-                max_tokens: 1024,
-                temperature: 0.7,
-            })
-        });
-
-        // If rate limited and we have retries left, wait and retry
-        if (response.status === 429 && attempt < retries) {
-            const waitTime = attempt * 2000; // 2s, 4s, 6s
-            console.log(`Rate limited. Waiting ${waitTime}ms before retry ${attempt + 1}/${retries}...`);
-            await sleep(waitTime);
-            continue;
-        }
-
-        return response;
-    }
-
-    // This shouldn't happen, but just in case
-    throw new Error('Max retries exceeded');
-}
 
 export async function POST(request: Request) {
     try {
-        const { message, mode, history } = await request.json() as {
-            message: string;
-            mode: PersonalityMode;
-            history: Message[];
-        };
-
-        const apiKey = process.env.OPENROUTER_API_KEY;
-
-        if (!apiKey) {
+        if (!OPENROUTER_API_KEY) {
             return NextResponse.json(
-                { error: 'API key not configured. Please add OPENROUTER_API_KEY to .env.local' },
+                { error: 'OpenRouter API Key not configured' },
                 { status: 500 }
             );
         }
 
-        // Check if we should search the web for this query
+        const body = await request.json();
+        const { message, mode, history, model } = body; // Read model from request
+
+        // Choose model: User selected > Env Var > Default Constant
+        const selectedModel = model || process.env.OPENROUTER_MODEL || DEFAULT_MODEL_ID;
+
+        // 1. Check for web search triggers
+        const searchKeywords = ['berita', 'news', 'apa itu', 'siapa', 'cari', 'presiden', 'gubernur', 'cuaca', 'harga', 'jadwal', 'timnas', 'skor', 'gempa', 'banjir', 'traffic', 'macet', 'wik'];
+        const lowerMessage = message.toLowerCase();
+        const shouldSearch = searchKeywords.some(keyword => lowerMessage.includes(keyword));
+
         let searchContext = '';
-        if (shouldSearch(message)) {
-            console.log('🔍 Searching web for:', message);
-            const searchResults = await searchWeb(message);
-            if (searchResults.length > 0) {
-                searchContext = `\n\nINFORMASI DARI WEB SEARCH (gunakan ini untuk menjawab):\n${searchResults.map(r => `- ${r.title}: ${r.snippet}`).join('\n')}`;
-                console.log('📌 Found', searchResults.length, 'search results');
+
+        if (shouldSearch) {
+            // Small delay to prevent rate limits on search API
+            await new Promise(resolve => setTimeout(resolve, 500));
+            const searchResult = await performWebSearch(message);
+            if (searchResult) {
+                searchContext = `
+WEB SEARCH RESULTS:
+${searchResult}
+
+INSTRUCTION: Use the above search results to answer the user's question accurately. Citation included.`;
             }
         }
 
-        const systemPrompt = getSystemPrompt(mode);
-        const conversationHistory = formatConversationHistory(history);
+        // 2. Prepare System Prompt
+        const baseSystemPrompt = getSystemPrompt(mode as PersonalityMode);
+        const fullSystemPrompt = searchContext
+            ? `${baseSystemPrompt}\n\n${searchContext}`
+            : baseSystemPrompt;
 
-        // Build messages array for OpenRouter
+        // 3. Prepare Messages for API
         const messages = [
-            { role: 'system', content: systemPrompt + searchContext },
+            { role: 'system', content: fullSystemPrompt },
+            ...history.map((msg: any) => ({
+                role: msg.role,
+                content: msg.content
+            })),
+            { role: 'user', content: message }
         ];
 
-        // Add conversation history as context
-        if (conversationHistory) {
-            messages.push({
-                role: 'user',
-                content: `Previous conversation:\n${conversationHistory}\n\n---\nCurrent message:`
-            });
-        }
+        // 4. Call OpenRouter API with Retry Logic
+        const response = await callOpenRouter(messages, OPENROUTER_API_KEY, selectedModel);
 
-        messages.push({ role: 'user', content: message });
+        const data = await response.json();
 
-        const response = await callOpenRouter(messages, apiKey);
-
-        if (!response.ok) {
-            const errorData = await response.json().catch(() => ({}));
-            console.error('OpenRouter API error:', errorData);
-
-            // Special handling for rate limit
-            if (response.status === 429) {
-                return NextResponse.json(
-                    { error: '⏰ Rate limit tercapai! Tunggu beberapa detik lalu coba lagi. (Free tier punya limit ~20 req/menit)' },
-                    { status: 429 }
-                );
-            }
-
+        if (data.error) {
+            console.error('OpenRouter API Error:', data.error);
             return NextResponse.json(
-                { error: `API Error: ${response.status} - ${errorData.error?.message || 'Unknown error'}` },
-                { status: response.status }
+                { error: `AI Error: ${data.error.message || 'Unknown error'}` },
+                { status: 500 }
             );
         }
 
-        const data = await response.json();
-        const text = data.choices?.[0]?.message?.content || 'Maaf, tidak bisa generate response.';
+        return NextResponse.json({
+            response: data.choices[0].message.content
+        });
 
-        return NextResponse.json({ response: text });
     } catch (error) {
-        console.error('OpenRouter API error:', error);
+        console.error('Server Error:', error);
         return NextResponse.json(
-            { error: 'Failed to generate response. Please try again.' },
+            { error: 'Internal Server Error' },
             { status: 500 }
         );
     }
+}
+
+async function callOpenRouter(messages: { role: string; content: string }[], apiKey: string, model: string, retries = 3): Promise<Response> {
+    for (let attempt = 1; attempt <= retries; attempt++) {
+        try {
+            const response = await fetch(OPENROUTER_API_URL, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${apiKey}`,
+                    'Content-Type': 'application/json',
+                    'HTTP-Referer': process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000',
+                    'X-Title': 'AI Personal Assistant'
+                },
+                body: JSON.stringify({
+                    model: model, // Use dynamic model
+                    messages,
+                    max_tokens: 1024,
+                    temperature: 0.7,
+                })
+            });
+
+            if (response.status === 429) {
+                // Rate limit - wait exponentially
+                const delay = Math.pow(2, attempt) * 1000;
+                console.warn(`Rate limit hit. Retrying in ${delay}ms...`);
+                await new Promise(resolve => setTimeout(resolve, delay));
+                continue;
+            }
+
+            if (!response.ok) {
+                const errText = await response.text();
+                throw new Error(`OpenRouter responded with ${response.status}: ${errText}`);
+            }
+
+            return response;
+        } catch (e) {
+            if (attempt === retries) throw e;
+            console.warn(`Attempt ${attempt} failed, retrying...`);
+        }
+    }
+    throw new Error('Max retries exceeded');
 }

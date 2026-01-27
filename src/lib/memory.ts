@@ -1,12 +1,14 @@
 import { PersonalityMode, Message, Memory, UserPreferences } from '@/types';
+import { DEFAULT_MODEL_ID } from '@/lib/models';
 
 // Stateless Memory Logic - Resets on refresh
 // We implement the Memory interface but don't persist it
 
 const DEFAULT_PREFERENCES: UserPreferences = {
-    language: 'en', // Defaulting to generic English for privacy, though user can switch
+    language: 'en',
     explanationStyle: 'simple',
     currentMode: 'bestfriend',
+    currentModelId: DEFAULT_MODEL_ID, // Initialize with default model
 };
 
 const DEFAULT_MEMORY: Memory = {
@@ -42,6 +44,17 @@ export function setMode(memory: Memory, mode: PersonalityMode): Memory {
         preferences: {
             ...memory.preferences,
             currentMode: mode
+        },
+        lastUpdated: Date.now()
+    };
+}
+
+export function setModel(memory: Memory, modelId: string): Memory {
+    return {
+        ...memory,
+        preferences: {
+            ...memory.preferences,
+            currentModelId: modelId
         },
         lastUpdated: Date.now()
     };

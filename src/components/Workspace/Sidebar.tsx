@@ -43,9 +43,9 @@ export default function Sidebar({
     const currentModel = useMemo(() => getModelById(currentModelId), [currentModelId]);
 
     return (
-        <div className={`${isOpen ? 'w-[260px]' : 'w-[60px]'} bg-white dark:bg-zinc-950 border-r border-zinc-200 dark:border-zinc-900 flex flex-col h-full flex-shrink-0 z-20 transition-all duration-300 ease-in-out overflow-hidden`}>
+        <div className={`${isOpen ? 'w-[260px]' : 'w-[60px]'} bg-background border-r border-zinc-200 dark:border-zinc-950 flex flex-col h-full flex-shrink-0 z-20 transition-all duration-300 ease-in-out overflow-hidden`}>
             {/* App Header */}
-            <div className="h-14 flex items-center px-3 border-b border-zinc-200 dark:border-zinc-900 justify-between">
+            <div className="h-14 flex items-center px-3 border-b border-zinc-200 dark:border-zinc-950 justify-between">
                 {isOpen ? (
                     <>
                         <div className="flex items-center">
@@ -75,7 +75,7 @@ export default function Sidebar({
             <div className="p-2 space-y-1">
                 <button
                     onClick={onReset}
-                    className={`w-full flex items-center gap-2 px-3 py-2 rounded-md bg-zinc-100 dark:bg-zinc-900 hover:bg-zinc-200 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 text-sm transition-colors border border-zinc-200 dark:border-zinc-800 ${!isOpen && 'justify-center'}`}
+                    className={`w-full flex items-center gap-2 px-3 py-2 rounded-md bg-zinc-100 dark:bg-zinc-900 hover:bg-zinc-200 dark:hover:bg-zinc-900 text-zinc-700 dark:text-zinc-300 text-sm transition-colors border border-zinc-200 dark:border-zinc-900 ${!isOpen && 'justify-center'}`}
                     title={!isOpen ? t('newChat', language) : ''}
                 >
                     <Plus size={14} />
@@ -92,7 +92,7 @@ export default function Sidebar({
                     <div className="relative">
                         <button
                             onClick={() => setIsModelMenuOpen(!isModelMenuOpen)}
-                            className="w-full flex items-center justify-between px-3 py-2 rounded-md bg-zinc-50 dark:bg-zinc-900/50 hover:bg-zinc-100 dark:hover:bg-zinc-900 border border-zinc-200 dark:border-zinc-800/50 transition-all text-sm group"
+                            className="w-full flex items-center justify-between px-3 py-2 rounded-md bg-zinc-50 dark:bg-zinc-900/50 hover:bg-zinc-100 dark:hover:bg-zinc-900 border border-zinc-200 dark:border-zinc-900 transition-all text-sm group"
                         >
                             <div className="flex items-center gap-2 overflow-hidden">
                                 <Cpu size={14} className="text-blue-500 flex-shrink-0" />
@@ -103,7 +103,7 @@ export default function Sidebar({
 
                         {/* Dropdown */}
                         {isModelMenuOpen && (
-                            <div className="absolute top-full left-0 w-full mt-1 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-md shadow-xl py-1 z-30 overflow-hidden">
+                            <div className="absolute top-full left-0 w-full mt-1 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-900 rounded-md shadow-xl py-1 z-30 overflow-hidden">
                                 {AVAILABLE_MODELS.map(model => (
                                     <button
                                         key={model.id}
@@ -163,7 +163,7 @@ export default function Sidebar({
             <div className="flex-1" />
 
             {/* Bottom Actions */}
-            <div className="p-2 border-t border-zinc-200 dark:border-zinc-900 space-y-0.5">
+            <div className="p-2 border-t border-zinc-200 dark:border-zinc-950 space-y-0.5">
                 <button
                     onClick={onOpenSystemStatus}
                     className={`w-full flex items-center gap-3 px-3 py-2 rounded-md text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-900 text-sm transition-colors ${!isOpen && 'justify-center'}`}

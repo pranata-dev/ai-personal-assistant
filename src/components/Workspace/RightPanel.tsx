@@ -20,9 +20,9 @@ export default function RightPanel({ memory, mode, isOpen, onToggle }: RightPane
     const language = memory.preferences.language as Language || 'en';
 
     return (
-        <div className={`${isOpen ? 'w-[300px]' : 'w-[60px]'} bg-white dark:bg-zinc-950 border-l border-zinc-200 dark:border-zinc-900 h-full flex flex-col flex-shrink-0 transition-all duration-300 ease-in-out overflow-hidden`}>
+        <div className={`${isOpen ? 'w-[300px]' : 'w-[60px]'} bg-background border-l border-border h-full flex flex-col flex-shrink-0 transition-all duration-300 ease-in-out overflow-hidden`}>
             {/* Header */}
-            <div className="h-14 flex items-center px-4 border-b border-zinc-200 dark:border-zinc-900 justify-between">
+            <div className="h-14 flex items-center px-4 border-b border-border justify-between">
                 {isOpen ? (
                     <>
                         <span className="text-xs font-semibold text-zinc-500 uppercase tracking-wider whitespace-nowrap">{t('systemStatus', language)}</span>
@@ -52,7 +52,7 @@ export default function RightPanel({ memory, mode, isOpen, onToggle }: RightPane
                         <Layers size={12} />
                         {t('activeMode', language)}
                     </h3>
-                    <div className="bg-zinc-50 dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-900 rounded-lg p-3">
+                    <div className="bg-zinc-50 dark:bg-zinc-900/50 border border-border rounded-lg p-3">
                         <div className="text-sm font-medium text-zinc-800 dark:text-zinc-200 capitalize mb-1">{mode}</div>
                         <div className="text-xs text-zinc-500 leading-relaxed">
                             {getModeDescription(mode)}
@@ -66,7 +66,7 @@ export default function RightPanel({ memory, mode, isOpen, onToggle }: RightPane
                         <Cpu size={12} />
                         {t('modelEngine', language)}
                     </h3>
-                    <div className="bg-zinc-50 dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-900 rounded-lg p-3">
+                    <div className="bg-zinc-50 dark:bg-zinc-900/50 border border-border rounded-lg p-3">
                         <div className="text-sm font-medium text-zinc-800 dark:text-zinc-200 mb-1">{currentModel?.name || t('unknownModel', language)}</div>
                         <p className="text-[10px] text-zinc-500 leading-relaxed mb-2">
                             {currentModel?.description}
@@ -83,7 +83,7 @@ export default function RightPanel({ memory, mode, isOpen, onToggle }: RightPane
                         <Shield size={12} />
                         {t('privacy', language)}
                     </h3>
-                    <div className="bg-zinc-50 dark:bg-zinc-900/50 rounded-lg p-3 border border-zinc-200 dark:border-zinc-900/50">
+                    <div className="bg-zinc-50 dark:bg-zinc-900/50 rounded-lg p-3 border border-border">
                         <div className="flex items-center gap-2 text-xs text-zinc-400">
                             <div className="w-1.5 h-1.5 rounded-full bg-green-500"></div>
                             <span>{t('statelessSession', language)}</span>

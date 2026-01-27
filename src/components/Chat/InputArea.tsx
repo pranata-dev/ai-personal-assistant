@@ -88,7 +88,7 @@ export default function InputArea({ onSend, isLoading, mode, spokenLanguage, lan
     };
 
     return (
-        <div className="p-4 bg-white dark:bg-zinc-950 transition-colors duration-200">
+        <div className="p-4 bg-background transition-colors duration-200">
             <div className="max-w-4xl mx-auto">
                 <input
                     type="file"
@@ -99,8 +99,8 @@ export default function InputArea({ onSend, isLoading, mode, spokenLanguage, lan
                 />
 
                 <div className={`
-          relative bg-zinc-50 dark:bg-zinc-900 rounded-xl border transition-all duration-200
-          ${input ? 'border-zinc-300 dark:border-zinc-700 ring-1 ring-zinc-200 dark:ring-zinc-800' : 'border-zinc-200 dark:border-zinc-800'}
+          relative bg-white dark:bg-zinc-800/50 rounded-xl border transition-all duration-200
+          ${input ? 'border-zinc-400 dark:border-zinc-800 ring-1 ring-zinc-200 dark:ring-zinc-900/50' : 'border-zinc-200 dark:border-zinc-900'}
         `}>
                     <textarea
                         value={input}
@@ -108,7 +108,7 @@ export default function InputArea({ onSend, isLoading, mode, spokenLanguage, lan
                         onKeyDown={handleKeyDown}
                         placeholder={isListening ? t('listening', language) : `${t('messagePlaceholder', language)} ${mode}...`}
                         disabled={isLoading}
-                        className="w-full px-4 py-3 bg-transparent text-zinc-900 dark:text-zinc-200 placeholder-zinc-400 dark:placeholder-zinc-600 
+                        className="w-full px-4 py-3 bg-transparent text-foreground placeholder-zinc-400 dark:placeholder-zinc-500 
               text-[15px] resize-none outline-none min-h-[56px] max-h-[200px]"
                         rows={1}
                         style={{ height: 'auto' }}

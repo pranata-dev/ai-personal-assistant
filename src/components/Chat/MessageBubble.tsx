@@ -27,7 +27,7 @@ export default function MessageBubble({ message, mode }: MessageBubbleProps) {
                 line = line.replace(/\*\*(.*?)\*\*/g, '<span class="font-semibold text-zinc-900 dark:text-white">$1</span>');
 
                 // Code: bg-zinc-100/zinc-800
-                line = line.replace(/`([^`]+)`/g, '<code class="bg-zinc-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded text-[13px] font-mono text-zinc-800 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700/50">$1</code>');
+                line = line.replace(/`([^`]+)`/g, '<code class="bg-zinc-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded text-[13px] font-mono text-zinc-800 dark:text-zinc-300 border border-border">$1</code>');
 
                 // List: bullet bg-zinc-400 (light) / zinc-600 (dark)
                 if (line.startsWith('- ')) {
@@ -74,7 +74,7 @@ export default function MessageBubble({ message, mode }: MessageBubbleProps) {
                     {!isUser && (
                         <button
                             onClick={handleCopy}
-                            className="p-1.5 rounded bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200 hover:border-zinc-300 dark:hover:border-zinc-700 transition-all"
+                            className="p-1.5 rounded bg-zinc-100 dark:bg-zinc-900 border border-border text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200 hover:border-zinc-300 dark:hover:border-zinc-700 transition-all"
                             title="Copy"
                         >
                             {copied ? <Check size={12} /> : <Copy size={12} />}

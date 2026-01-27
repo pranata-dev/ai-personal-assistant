@@ -175,7 +175,7 @@ export default function Home() {
 
   return (
 
-    <div className="h-screen flex overflow-hidden font-sans transition-colors duration-200 bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-200 selection:bg-blue-100 selection:text-blue-900 dark:selection:bg-zinc-800 dark:selection:text-white">
+    <div className="h-screen flex overflow-hidden font-sans transition-colors duration-200 bg-background text-foreground selection:bg-blue-100 selection:text-blue-900 dark:selection:bg-zinc-800 dark:selection:text-white">
       {/* 1. Left Sidebar */}
       <Sidebar
         currentMode={currentMode}

@@ -25,10 +25,10 @@ export default function SettingsModal({
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-            <div className="w-full max-w-md bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-2xl overflow-hidden scale-100 animate-in zoom-in-95 duration-200">
+            <div className="w-full max-w-md bg-white dark:bg-zinc-900 border border-border rounded-xl shadow-2xl overflow-hidden scale-100 animate-in zoom-in-95 duration-200">
 
                 {/* Header */}
-                <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/50">
+                <div className="flex items-center justify-between px-6 py-4 border-b border-border bg-zinc-50 dark:bg-zinc-900/50">
                     <h2 className="text-lg font-semibold text-zinc-800 dark:text-zinc-100">{t('settingsTitle', language)}</h2>
                     <button
                         onClick={onClose}
@@ -47,7 +47,7 @@ export default function SettingsModal({
                             {theme === 'dark' ? <Moon size={16} /> : <Sun size={16} />}
                             {t('appearance', language)}
                         </label>
-                        <div className="grid grid-cols-2 gap-2 p-1 bg-zinc-100 dark:bg-zinc-950/50 rounded-lg border border-zinc-200 dark:border-zinc-800">
+                        <div className="grid grid-cols-2 gap-2 p-1 bg-zinc-100 dark:bg-zinc-950/50 rounded-lg border border-border">
                             <button
                                 onClick={() => setTheme('dark')}
                                 className={`px-3 py-2 rounded-md text-sm font-medium transition-all ${theme === 'dark'
@@ -110,7 +110,7 @@ export default function SettingsModal({
                             <select
                                 value={spokenLanguage}
                                 onChange={(e) => setSpokenLanguage(e.target.value as any)}
-                                className="w-full px-3 py-2 bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-lg text-sm text-zinc-900 dark:text-zinc-300 outline-none focus:border-blue-500/50 transition-colors appearance-none"
+                                className="w-full px-3 py-2 bg-white dark:bg-zinc-950 border border-border rounded-lg text-sm text-zinc-900 dark:text-zinc-300 outline-none focus:border-blue-500/50 transition-colors appearance-none"
                             >
                                 <option value="auto">Auto Detect (Browser Default)</option>
                                 <option value="id-ID">Bahasa Indonesia (ID)</option>
@@ -125,7 +125,7 @@ export default function SettingsModal({
                 </div>
 
                 {/* Footer */}
-                <div className="px-6 py-4 bg-zinc-50 dark:bg-zinc-950 border-t border-zinc-200 dark:border-zinc-900 flex justify-between items-center">
+                <div className="px-6 py-4 bg-zinc-50 dark:bg-zinc-950 border-t border-border flex justify-between items-center">
                     <div className="flex items-center gap-2">
                         <div className="w-2 h-2 rounded-full bg-green-500"></div>
                         <span className="text-xs text-zinc-500">{t('statelessSession', language)}</span>

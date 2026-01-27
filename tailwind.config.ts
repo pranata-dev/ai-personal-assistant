@@ -8,7 +8,13 @@ const config: Config = {
     ],
     darkMode: "class", // Explicitly enable class-based dark mode
     theme: {
-        extend: {},
+        extend: {
+            colors: {
+                background: "var(--background)",
+                foreground: "var(--foreground)",
+                border: "var(--border)",
+            },
+        },
     },
     plugins: [],
 };

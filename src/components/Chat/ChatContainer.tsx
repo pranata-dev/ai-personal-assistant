@@ -35,7 +35,7 @@ export default function ChatContainer({ messages, mode, isLoading, onSend, spoke
                 <div className="min-h-full pb-4">
                     {messages.length === 0 && (
                         <div className="flex flex-col items-center justify-center min-h-[500px] text-center px-4 animate-fade-in">
-                            <div className="w-16 h-16 rounded-2xl bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 flex items-center justify-center mb-6 text-zinc-400 dark:text-zinc-500">
+                            <div className="w-16 h-16 rounded-2xl bg-zinc-100 dark:bg-zinc-900 border border-border flex items-center justify-center mb-6 text-zinc-400 dark:text-zinc-500">
                                 <Bot size={32} />
                             </div>
                             <h2 className="text-xl font-medium text-zinc-800 dark:text-zinc-200 mb-2">
@@ -54,7 +54,7 @@ export default function ChatContainer({ messages, mode, isLoading, onSend, spoke
                                         key={item.label}
                                         onClick={() => onSend(item.prompt)}
                                         className="px-4 py-4 rounded-xl bg-zinc-50 dark:bg-zinc-900/40 hover:bg-zinc-100 dark:hover:bg-zinc-900 
-                      border border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-600
+                      border border-border hover:border-zinc-300 dark:hover:border-zinc-600
                       text-zinc-500 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200 text-sm text-left
                       transition-all duration-200 flex items-center gap-3 group"
                                     >
@@ -86,7 +86,7 @@ export default function ChatContainer({ messages, mode, isLoading, onSend, spoke
             </div>
 
             {/* Input area - Sticky at bottom */}
-            <div className="z-10 bg-white dark:bg-zinc-950 border-t border-zinc-200 dark:border-zinc-900/50 transition-colors duration-200">
+            <div className="z-10 bg-background border-t border-zinc-200 dark:border-black transition-colors duration-200">
                 <InputArea onSend={onSend} isLoading={isLoading} mode={mode} spokenLanguage={spokenLanguage} language={language} />
             </div>
         </div>

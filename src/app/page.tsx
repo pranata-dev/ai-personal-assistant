@@ -18,7 +18,8 @@ export default function Home() {
 
   // Settings State
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const [theme, setTheme] = useState<'dark' | 'light'>('dark');
+  // Theme state removed - managed by next-themes
+  // Theme state removed - managed by next-themes
   const [spokenLanguage, setSpokenLanguage] = useState<'id-ID' | 'en-US' | 'auto'>('auto');
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isRightPanelOpen, setIsRightPanelOpen] = useState(false);
@@ -36,26 +37,7 @@ export default function Home() {
   }, [memory]);
 
   // Theme Effect - Apply dark/light mode class to html element
-  useEffect(() => {
-    const root = document.documentElement;
-
-    // Remove both classes first to ensure clean state
-    root.classList.remove('dark', 'light');
-
-    // Add the appropriate class based on theme
-    if (theme === 'dark') {
-      root.classList.add('dark');
-      root.style.colorScheme = 'dark';
-    } else {
-      root.classList.add('light');
-      root.style.colorScheme = 'light';
-    }
-
-    // Cleanup function
-    return () => {
-      root.classList.remove('dark', 'light');
-    };
-  }, [theme]);
+  // Theme Effect removed - managed by next-themes
 
   // Derive memory-based stats
   const currentMode = memory?.preferences.currentMode ?? 'bestfriend';
@@ -191,7 +173,8 @@ export default function Home() {
   }
 
   return (
-    <div className={`h-screen flex overflow-hidden font-sans transition-colors duration-200 ${theme === 'dark' ? 'bg-zinc-950 text-zinc-200 selection:bg-zinc-800 selection:text-white' : 'bg-white text-zinc-900 selection:bg-blue-100 selection:text-blue-900'}`}>
+
+    <div className="h-screen flex overflow-hidden font-sans transition-colors duration-200 bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-200 selection:bg-blue-100 selection:text-blue-900 dark:selection:bg-zinc-800 dark:selection:text-white">
       {/* 1. Left Sidebar */}
       <Sidebar
         currentMode={currentMode}
@@ -237,8 +220,6 @@ export default function Home() {
         onClose={() => setIsSettingsOpen(false)}
         language={currentLanguage}
         setLanguage={handleLanguageChange}
-        theme={theme}
-        setTheme={setTheme}
         spokenLanguage={spokenLanguage}
         setSpokenLanguage={setSpokenLanguage}
       />

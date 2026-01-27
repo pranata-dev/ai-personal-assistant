@@ -3,13 +3,13 @@
 import { X, Moon, Sun, Globe, Languages, Zap } from 'lucide-react';
 import { t, Language } from '@/lib/i18n';
 
+import { useTheme } from 'next-themes';
+
 interface SettingsModalProps {
     isOpen: boolean;
     onClose: () => void;
     language: Language;
     setLanguage: (lang: Language) => void;
-    theme: 'dark' | 'light';
-    setTheme: (theme: 'dark' | 'light') => void;
     spokenLanguage: 'id-ID' | 'en-US' | 'auto';
     setSpokenLanguage: (lang: 'id-ID' | 'en-US' | 'auto') => void;
 }
@@ -17,9 +17,10 @@ interface SettingsModalProps {
 export default function SettingsModal({
     isOpen, onClose,
     language, setLanguage,
-    theme, setTheme,
     spokenLanguage, setSpokenLanguage
 }: SettingsModalProps) {
+    const { theme, setTheme } = useTheme();
+
     if (!isOpen) return null;
 
     return (
@@ -50,8 +51,8 @@ export default function SettingsModal({
                             <button
                                 onClick={() => setTheme('dark')}
                                 className={`px-3 py-2 rounded-md text-sm font-medium transition-all ${theme === 'dark'
-                                        ? 'bg-zinc-800 text-blue-400 shadow-sm'
-                                        : 'text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-300'
+                                    ? 'bg-zinc-800 text-blue-400 shadow-sm'
+                                    : 'text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-300'
                                     }`}
                             >
                                 {t('darkMode', language)}
@@ -59,8 +60,8 @@ export default function SettingsModal({
                             <button
                                 onClick={() => setTheme('light')}
                                 className={`px-3 py-2 rounded-md text-sm font-medium transition-all ${theme === 'light'
-                                        ? 'bg-white text-zinc-900 shadow-sm'
-                                        : 'text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-300'
+                                    ? 'bg-white text-zinc-900 shadow-sm'
+                                    : 'text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-300'
                                     }`}
                             >
                                 {t('lightMode', language)}
@@ -81,8 +82,8 @@ export default function SettingsModal({
                             <button
                                 onClick={() => setLanguage('en')}
                                 className={`flex items-center justify-center gap-2 px-4 py-3 rounded-lg border transition-all ${language === 'en'
-                                        ? 'bg-blue-500/10 border-blue-500/50 text-blue-500 dark:text-blue-400'
-                                        : 'bg-zinc-50 dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400 hover:border-zinc-300 dark:hover:border-zinc-700'
+                                    ? 'bg-blue-500/10 border-blue-500/50 text-blue-500 dark:text-blue-400'
+                                    : 'bg-zinc-50 dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400 hover:border-zinc-300 dark:hover:border-zinc-700'
                                     }`}
                             >
                                 <div className="text-xs font-semibold">English</div>
@@ -90,8 +91,8 @@ export default function SettingsModal({
                             <button
                                 onClick={() => setLanguage('id')}
                                 className={`flex items-center justify-center gap-2 px-4 py-3 rounded-lg border transition-all ${language === 'id'
-                                        ? 'bg-blue-500/10 border-blue-500/50 text-blue-500 dark:text-blue-400'
-                                        : 'bg-zinc-50 dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400 hover:border-zinc-300 dark:hover:border-zinc-700'
+                                    ? 'bg-blue-500/10 border-blue-500/50 text-blue-500 dark:text-blue-400'
+                                    : 'bg-zinc-50 dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400 hover:border-zinc-300 dark:hover:border-zinc-700'
                                     }`}
                             >
                                 <div className="text-xs font-semibold">Indonesia</div>

@@ -1,8 +1,7 @@
 @import "tailwindcss";
 
-/* 
-  Tailwind v4 Config handles structure.
-*/
+/* Dark mode configuration for Tailwind v4 */
+@custom-variant dark (&:where(.dark, .dark *));
 
 /* Theme Variables */
 :root {

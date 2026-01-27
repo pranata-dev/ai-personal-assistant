@@ -4,6 +4,42 @@ import { getSystemPrompt, formatConversationHistory } from '@/lib/ai-engine';
 
 const OPENROUTER_API_URL = 'https://openrouter.ai/api/v1/chat/completions';
 
+// Helper to wait
+const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+async function callOpenRouter(messages: { role: string; content: string }[], apiKey: string, retries = 3): Promise<Response> {
+    for (let attempt = 1; attempt <= retries; attempt++) {
+        const response = await fetch(OPENROUTER_API_URL, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${apiKey}`,
+                'Content-Type': 'application/json',
+                'HTTP-Referer': process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000',
+                'X-Title': 'AI Personal Assistant'
+            },
+            body: JSON.stringify({
+                model: process.env.OPENROUTER_MODEL || 'meta-llama/llama-3.3-70b-instruct:free',
+                messages,
+                max_tokens: 1024,
+                temperature: 0.7,
+            })
+        });
+
+        // If rate limited and we have retries left, wait and retry
+        if (response.status === 429 && attempt < retries) {
+            const waitTime = attempt * 2000; // 2s, 4s, 6s
+            console.log(`Rate limited. Waiting ${waitTime}ms before retry ${attempt + 1}/${retries}...`);
+            await sleep(waitTime);
+            continue;
+        }
+
+        return response;
+    }
+
+    // This shouldn't happen, but just in case
+    throw new Error('Max retries exceeded');
+}
+
 export async function POST(request: Request) {
     try {
         const { message, mode, history } = await request.json() as {
@@ -39,26 +75,20 @@ export async function POST(request: Request) {
 
         messages.push({ role: 'user', content: message });
 
-        const response = await fetch(OPENROUTER_API_URL, {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${apiKey}`,
-                'Content-Type': 'application/json',
-                'HTTP-Referer': process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000',
-                'X-Title': 'AI Personal Assistant'
-            },
-            body: JSON.stringify({
-                // Using a free model - you can change this to other models
-                model: process.env.OPENROUTER_MODEL || 'meta-llama/llama-3.2-3b-instruct:free',
-                messages,
-                max_tokens: 1024,
-                temperature: 0.7,
-            })
-        });
+        const response = await callOpenRouter(messages, apiKey);
 
         if (!response.ok) {
             const errorData = await response.json().catch(() => ({}));
             console.error('OpenRouter API error:', errorData);
+
+            // Special handling for rate limit
+            if (response.status === 429) {
+                return NextResponse.json(
+                    { error: '⏰ Rate limit tercapai! Tunggu beberapa detik lalu coba lagi. (Free tier punya limit ~20 req/menit)' },
+                    { status: 429 }
+                );
+            }
+
             return NextResponse.json(
                 { error: `API Error: ${response.status} - ${errorData.error?.message || 'Unknown error'}` },
                 { status: response.status }

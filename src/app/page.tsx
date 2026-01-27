@@ -115,7 +115,7 @@ export default function Home() {
 
       if (data.error) {
         const errorMessage = createMessage(
-          `⚠️ ${data.error}\n\nTip: Pastikan GEMINI_API_KEY sudah diset di file .env.local`,
+          `⚠️ ${data.error}`,
           'assistant'
         );
         setMemory(addMessage(updatedMemory, errorMessage));

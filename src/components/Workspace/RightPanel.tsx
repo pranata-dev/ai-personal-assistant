@@ -1,16 +1,18 @@
 'use client';
 
 import { Memory, PersonalityMode } from '@/types';
-import { Layers, Shield, Cpu } from 'lucide-react';
+import { Layers, Shield, Cpu, Menu, X } from 'lucide-react';
 import { getModelById } from '@/lib/models';
 import { t, Language } from '@/lib/i18n';
 
 interface RightPanelProps {
     memory: Memory | null;
     mode: PersonalityMode;
+    isOpen: boolean;
+    onToggle: () => void;
 }
 
-export default function RightPanel({ memory, mode }: RightPanelProps) {
+export default function RightPanel({ memory, mode, isOpen, onToggle }: RightPanelProps) {
     if (!memory) return null;
 
     const currentModelId = memory.preferences.currentModelId;
@@ -18,10 +20,29 @@ export default function RightPanel({ memory, mode }: RightPanelProps) {
     const language = memory.preferences.language as Language || 'en';
 
     return (
-        <div className="w-[300px] bg-white dark:bg-zinc-950 border-l border-zinc-200 dark:border-zinc-900 h-full flex flex-col flex-shrink-0 transition-colors duration-200">
+        <div className={`${isOpen ? 'w-[300px]' : 'w-[60px]'} bg-white dark:bg-zinc-950 border-l border-zinc-200 dark:border-zinc-900 h-full flex flex-col flex-shrink-0 transition-all duration-300 ease-in-out overflow-hidden`}>
             {/* Header */}
-            <div className="h-14 flex items-center px-4 border-b border-zinc-200 dark:border-zinc-900">
-                <span className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">{t('systemStatus', language)}</span>
+            <div className="h-14 flex items-center px-4 border-b border-zinc-200 dark:border-zinc-900 justify-between">
+                {isOpen ? (
+                    <>
+                        <span className="text-xs font-semibold text-zinc-500 uppercase tracking-wider whitespace-nowrap">{t('systemStatus', language)}</span>
+                        <button
+                            onClick={onToggle}
+                            className="p-1.5 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-900 text-zinc-500 dark:text-zinc-600 transition-colors"
+                            title="Collapse panel"
+                        >
+                            <X size={18} />
+                        </button>
+                    </>
+                ) : (
+                    <button
+                        onClick={onToggle}
+                        className="p-1.5 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-900 text-zinc-500 dark:text-zinc-600 transition-colors mx-auto"
+                        title="Expand panel"
+                    >
+                        <Menu size={18} />
+                    </button>
+                )}
             </div>
 
             <div className="flex-1 overflow-y-auto p-4 space-y-6">

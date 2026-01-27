@@ -21,6 +21,7 @@ export default function Home() {
   const [theme, setTheme] = useState<'dark' | 'light'>('dark');
   const [spokenLanguage, setSpokenLanguage] = useState<'id-ID' | 'en-US' | 'auto'>('auto');
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isRightPanelOpen, setIsRightPanelOpen] = useState(false);
 
   // Load memory on mount - NO LocalStorage
   useEffect(() => {
@@ -190,6 +191,7 @@ export default function Home() {
         onModelChange={handleModelChange}
         onReset={handleReset}
         onOpenSettings={() => setIsSettingsOpen(true)}
+        onOpenSystemStatus={() => setIsRightPanelOpen(true)}
         onToggle={() => setIsSidebarOpen(!isSidebarOpen)}
       />
 
@@ -206,10 +208,17 @@ export default function Home() {
         {/* Transparent wrapper/overlay for modals if needed */}
       </MainArea>
 
-      {/* 3. Right Panel (System Status) */}
-      <div className="hidden xl:block">
-        <RightPanel memory={memory} mode={currentMode} />
-      </div>
+      {/* 3. Right Panel (System Status) - Only shown when opened from sidebar */}
+      {isRightPanelOpen && (
+        <div className="hidden xl:block">
+          <RightPanel
+            memory={memory}
+            mode={currentMode}
+            isOpen={isRightPanelOpen}
+            onToggle={() => setIsRightPanelOpen(false)}
+          />
+        </div>
+      )}
 
       {/* Settings Modal */}
       <SettingsModal

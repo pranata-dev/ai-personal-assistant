@@ -1,7 +1,7 @@
 'use client';
 
 import { PersonalityMode } from '@/types';
-import { BookOpen, User, Terminal, Sparkles, Settings, Plus, Cpu, ChevronDown, Menu, X } from 'lucide-react';
+import { BookOpen, User, Terminal, Sparkles, Settings, Plus, Cpu, ChevronDown, Menu, X, Info } from 'lucide-react';
 import { AVAILABLE_MODELS, getModelById } from '@/lib/models';
 import { useMemo, useState } from 'react';
 import { t, Language } from '@/lib/i18n';
@@ -15,6 +15,7 @@ interface SidebarProps {
     onModelChange: (modelId: string) => void;
     onReset: () => void;
     onOpenSettings: () => void;
+    onOpenSystemStatus: () => void;
     onToggle: () => void;
 }
 
@@ -27,6 +28,7 @@ export default function Sidebar({
     onModelChange,
     onReset,
     onOpenSettings,
+    onOpenSystemStatus,
     onToggle
 }: SidebarProps) {
     const [isModelMenuOpen, setIsModelMenuOpen] = useState(false);
@@ -161,7 +163,15 @@ export default function Sidebar({
             <div className="flex-1" />
 
             {/* Bottom Actions */}
-            <div className="p-2 border-t border-zinc-200 dark:border-zinc-900">
+            <div className="p-2 border-t border-zinc-200 dark:border-zinc-900 space-y-0.5">
+                <button
+                    onClick={onOpenSystemStatus}
+                    className={`w-full flex items-center gap-3 px-3 py-2 rounded-md text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-900 text-sm transition-colors ${!isOpen && 'justify-center'}`}
+                    title={!isOpen ? t('systemStatus', language) : ''}
+                >
+                    <Info size={16} />
+                    {isOpen && t('systemStatus', language)}
+                </button>
                 <button
                     onClick={onOpenSettings}
                     className={`w-full flex items-center gap-3 px-3 py-2 rounded-md text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-900 text-sm transition-colors ${!isOpen && 'justify-center'}`}

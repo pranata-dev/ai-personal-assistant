@@ -1,71 +1,99 @@
-# AI Personal Assistant 🤖
+# Intelligent Personal Workspace
 
-A professional, desktop-first AI workspace powered by OpenRouter (Llama 3.3). Built for productivity, not just chat.
+> A desktop-first cognitive interface designed for productivity, built with **Next.js 15** and **Llama 3.3**.
 
-## Features ✨
+![License](https://img.shields.io/badge/license-MIT-blue.svg)
+![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue)
+![Next.js](https://img.shields.io/badge/Next.js-15.0-black)
+![Tailwind](https://img.shields.io/badge/Tailwind-4.0-38bdf8)
 
-### 🖥️ Desktop Workspace
-- **Three-Column Layout**: Sidebar navigation, focused chat area, and context panel.
-- **Sticky Input Bar**: Professional, multi-line input inspired by Slack/Linear.
-- **Context Panel**: Always-visible memory status and active mode details.
+This project reimagines the chat interface as a **professional workspace**. Moving away from mobile-first designs, it offers a high-density, 3-column layout optimized for desktop productivity. It integrates context-aware memory, real-time web search (Wikipedia/Web), and adaptive personality modes into a seamless, distraction-free environment.
 
-### 🧠 Intelligent Features
-- **🌐 Web Search**: Automatically searches Wikipedia & Web for real-time info (e.g., "Who is president?").
-- **🔄 Personality Modes**:
-  - **Mentor**: Guided learning & advice
-  - **Peer**: Casual professional discussion
-  - **Strict**: Direct & concise answers
-  - **Creative**: Brainstorming partner
-- **� Context-Aware**: Remembers conversation history and user profile.
+---
 
-### 🎨 Modern UI
-- **Zinc/Slate Theme**: Minimalist dark mode designed for focus.
-- **Lucide Icons**: Professional visual language.
-- **Clean Typography**: Optimized for readability.
+## ⚡ Key Features
 
-## Tech Stack
+### 🖥️ Desktop-First Architecture
+Designed for screens ≥1280px.
+- **Three-Column Layout**: Persistent navigation, focused workspace, and always-visible live context.
+- **Sticky Productivity Bar**: A "Slack-style" input interface supporting multiline drafting and quick actions.
+- **Visual Hierarchy**: Minimalist Zinc/Slate dark theme optimized for long sessions.
 
-- **Next.js 15** (App Router)
-- **Tailwind CSS v4**
-- **OpenRouter API** (Llama 3.3 70B - Free)
-- **TypeScript**
+### 🧠 Adaptive Cognition
+The system adapts its persona and capabilities based on user intent.
+- **Mentor Mode**: Structured, educational guidance for complex topics.
+- **Peer Mode**: Collaborative, direct problem-solving.
+- **Strict Mode**: High-efficiency, concise technical answers.
+- **Creative Mode**: Lateral thinking partner for brainstorming.
 
-## Setup
+### 🔍 Integrated Intelligence
+- **Active Context**: Persists conversation history and user preferences via local storage.
+- **Autonomous Search**: Automatically detects when to query external sources (Wikipedia, Web) for real-time fact-checking.
+- **Smart Formatting**: Auto-formats code blocks, lists, and markdown for maximum readability.
 
-1. **Clone & Install**
+---
+
+## 🛠️ Technical Stack
+
+Built with a focus on performance, type safety, and modern React patterns.
+
+- **Frontend**: Next.js 15 (App Router), React 19, TypeScript
+- **Styling**: Tailwind CSS v4, Lucide React (Icons)
+- **AI Engine**: OpenRouter API (Llama 3.3 70B Instruct)
+- **State Management**: React Hooks + LocalStorage (Soft Persistence)
+- **Deployment**: Vercel-ready (Edge Runtime compatible)
+
+---
+
+## 🚀 Getting Started
+
+### Prerequisites
+- Node.js 18+
+- An API Key from [OpenRouter](https://openrouter.ai/) (Free tier available)
+
+### Installation
+
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/pranata-dev/personal-assistant-ai.git
+   cd personal-assistant-ai
+   ```
+
+2. **Install dependencies**
    ```bash
    npm install
    ```
 
-2. **Environment Setup**
-   Create `.env.local` with your OpenRouter key:
+3. **Configure Environment**
+   Create a `.env.local` file in the root directory:
    ```env
-   OPENROUTER_API_KEY=your_key_here
+   OPENROUTER_API_KEY=sk-or-v1-your-key-here
    OPENROUTER_MODEL=meta-llama/llama-3.3-70b-instruct:free
    ```
-   *Get a free key at [openrouter.ai](https://openrouter.ai/)*
 
-3. **Run Dev Server**
+4. **Launch Development Server**
    ```bash
    npm run dev
    ```
-   Open http://localhost:3000
-
-## Commands
-
-| Command | Description |
-|---------|-------------|
-| `mode mentor` | Switch to Mentor mode |
-| `mode strict` | Switch to Strict mode |
-| `reset memory` | Clear conversation context |
-| `help` | Show commands |
-
-## Customization
-
-Personalize your assistant in `src/lib/knowledge-base.ts`:
-- Update `user` profile (your interests, projects)
-- Tweak `personality` prompts
+   Access the workspace at `http://localhost:3000`.
 
 ---
 
-Made with 💜 using Next.js & Llama 3.3
+## 🎨 Design Philosophy
+
+**"Tools should be quiet."**
+
+Most AI interfaces are cluttered with suggestions and mobile-centric constraints. This project prioritizes:
+1. **Density**: Information density appropriate for desktop use.
+2. **Clarity**: High contrast, strict typography (Inter), and clear separation of concerns.
+3. **Speed**: Keyboard-first interactions and instant intent recognition.
+
+---
+
+## 📄 License
+
+This project is open source and available under the [MIT License](LICENSE).
+
+---
+
+*Built by [Pranata](https://github.com/pranata-dev).*

@@ -4,14 +4,14 @@ import { useState, useEffect, useCallback } from 'react';
 import { Message, PersonalityMode, Memory } from '@/types';
 import { loadMemory, saveMemory, addMessage, setMode, resetMemory, getRecentContext } from '@/lib/memory';
 import { detectIntent, getHelpMessage, getModeChangeMessage, getResetMemoryMessage, getPromptEngineerResponse, getThoughtDumpResponse } from '@/lib/ai-engine';
-import Header from '@/components/Header';
 import ChatContainer from '@/components/Chat/ChatContainer';
-import ModeSelector from '@/components/ModeSelector';
+import Sidebar from '@/components/Workspace/Sidebar';
+import RightPanel from '@/components/Workspace/RightPanel';
+import MainArea from '@/components/Workspace/MainArea';
 
 export default function Home() {
   const [memory, setMemory] = useState<Memory | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [isModeOpen, setIsModeOpen] = useState(false);
 
   // Load memory on mount
   useEffect(() => {
@@ -38,20 +38,13 @@ export default function Home() {
 
   const handleModeChange = useCallback((newMode: PersonalityMode) => {
     if (!memory) return;
-
     const updatedMemory = setMode(memory, newMode);
-    const modeMessage = createMessage(getModeChangeMessage(newMode), 'assistant');
-    const finalMemory = addMessage(updatedMemory, modeMessage);
-
-    setMemory(finalMemory);
-  }, [memory, currentMode]);
+    setMemory(updatedMemory);
+  }, [memory]);
 
   const handleReset = useCallback(() => {
     const freshMemory = resetMemory();
-    const welcomeMessage = createMessage(getResetMemoryMessage(), 'assistant');
-    const finalMemory = addMessage(freshMemory, welcomeMessage);
-
-    setMemory(finalMemory);
+    setMemory(freshMemory);
   }, []);
 
   const handleSend = useCallback(async (input: string) => {
@@ -67,7 +60,9 @@ export default function Home() {
 
     // Handle special intents locally
     if (intent.type === 'mode_switch' && intent.mode) {
-      handleModeChange(intent.mode);
+      // Just switch mode, no message
+      const modeMem = setMode(updatedMemory, intent.mode);
+      setMemory(modeMem);
       return;
     }
 
@@ -82,19 +77,16 @@ export default function Home() {
       return;
     }
 
-    // For prompt engineering and thought dump, show initial response
     if (intent.type === 'prompt_engineer') {
       const promptResponse = createMessage(getPromptEngineerResponse(input), 'assistant');
       updatedMemory = addMessage(updatedMemory, promptResponse);
       setMemory(updatedMemory);
-      // Continue to API call for actual generation
     }
 
     if (intent.type === 'thought_dump') {
       const dumpResponse = createMessage(getThoughtDumpResponse(), 'assistant');
       updatedMemory = addMessage(updatedMemory, dumpResponse);
       setMemory(updatedMemory);
-      // Continue to API call for actual analysis
     }
 
     // Call API for AI response
@@ -125,7 +117,7 @@ export default function Home() {
       }
     } catch {
       const errorMessage = createMessage(
-        '⚠️ Gagal konek ke server. Coba lagi nanti ya!',
+        '⚠️ Connection failed.',
         'assistant'
       );
       setMemory(addMessage(updatedMemory, errorMessage));
@@ -136,33 +128,37 @@ export default function Home() {
 
   if (!memory) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900 flex items-center justify-center">
-        <div className="animate-pulse text-white text-lg">Loading...</div>
+      <div className="min-h-screen bg-zinc-950 flex items-center justify-center">
+        <div className="w-8 h-8 rounded-full border-2 border-zinc-800 border-t-zinc-400 animate-spin" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900">
-      <div className="max-w-3xl mx-auto h-screen flex flex-col">
-        <Header mode={currentMode} onReset={handleReset} />
+    <div className="h-screen flex bg-zinc-950 overflow-hidden text-zinc-200 font-sans selection:bg-zinc-800 selection:text-white">
+      {/* 1. Left Sidebar */}
+      <Sidebar
+        currentMode={currentMode}
+        onModeChange={handleModeChange}
+        onReset={handleReset}
+      />
 
-        <main className="flex-1 overflow-hidden">
-          <ChatContainer
-            messages={messages}
-            mode={currentMode}
-            isLoading={isLoading}
-            onSend={handleSend}
-          />
-        </main>
-
-        <ModeSelector
-          currentMode={currentMode}
-          onModeChange={handleModeChange}
-          isOpen={isModeOpen}
-          onToggle={() => setIsModeOpen(!isModeOpen)}
+      {/* 2. Main Chat Area */}
+      <MainArea>
+        <ChatContainer
+          messages={messages}
+          mode={currentMode}
+          isLoading={isLoading}
+          onSend={handleSend}
         />
-      </div>
+      </MainArea>
+
+      {/* 3. Right Panel (Optional) */}
+      {messages.length > 0 && (
+        <div className="hidden xl:block">
+          <RightPanel memory={memory} mode={currentMode} />
+        </div>
+      )}
     </div>
   );
 }

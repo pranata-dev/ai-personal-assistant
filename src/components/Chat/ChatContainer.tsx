@@ -26,60 +26,66 @@ export default function ChatContainer({ messages, mode, isLoading, onSend }: Cha
     }, [messages, isLoading]);
 
     return (
-        <div className="flex flex-col h-full bg-zinc-950">
+        <div className="flex flex-col h-full relative">
             {/* Messages area */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-6 scrollbar-thin">
-                {messages.length === 0 && (
-                    <div className="flex flex-col items-center justify-center h-full text-center px-4 opacity-0 animate-fade-in" style={{ animationDelay: '0.2s' }}>
-                        <div className="w-16 h-16 rounded-2xl bg-zinc-900 border border-zinc-800 flex items-center justify-center mb-6 text-zinc-500">
-                            <Bot size={32} />
-                        </div>
-                        <h2 className="text-lg font-medium text-zinc-200 mb-2">
-                            AI Assistant
-                        </h2>
-                        <p className="text-zinc-500 text-sm max-w-sm leading-relaxed mb-8">
-                            Professional thinking partner aimed at productivity and problem solving.
-                        </p>
+            <div className="flex-1 overflow-y-auto w-full scrollbar-thin">
+                <div className="min-h-full pb-4"> {/* Padding bottom for sticky input */}
+                    {messages.length === 0 && (
+                        <div className="flex flex-col items-center justify-center min-h-[500px] text-center px-4 animate-fade-in">
+                            <div className="w-16 h-16 rounded-2xl bg-zinc-900 border border-zinc-800 flex items-center justify-center mb-6 text-zinc-500">
+                                <Bot size={32} />
+                            </div>
+                            <h2 className="text-xl font-medium text-zinc-200 mb-2">
+                                Good afternoon, User
+                            </h2>
+                            <p className="text-zinc-500 text-sm max-w-sm leading-relaxed mb-8">
+                                Ready to collaborate. Select a mode or start typing.
+                            </p>
 
-                        <div className="grid grid-cols-2 gap-3 max-w-md w-full">
-                            {[
-                                { label: 'Summarize Text', icon: Terminal, prompt: 'Initialize thought dump...' },
-                                { label: 'Generate Prompt', icon: Sparkles, prompt: 'Create a system prompt...' },
-                            ].map((item) => (
-                                <button
-                                    key={item.label}
-                                    onClick={() => onSend(item.prompt)}
-                                    className="px-4 py-3 rounded-xl bg-zinc-900/50 hover:bg-zinc-900 
-                    border border-zinc-800 hover:border-zinc-700
-                    text-zinc-400 hover:text-zinc-200 text-sm text-left
-                    transition-all duration-200 flex items-center gap-3"
-                                >
-                                    <item.icon size={14} />
-                                    {item.label}
-                                </button>
-                            ))}
+                            <div className="grid grid-cols-2 gap-3 max-w-lg w-full">
+                                {[
+                                    { label: 'Draft Email', icon: Terminal, prompt: 'Draft a professional email regarding...' },
+                                    { label: 'Brainstorm Ideas', icon: Sparkles, prompt: 'Brainstorm creative ideas for...' },
+                                ].map((item) => (
+                                    <button
+                                        key={item.label}
+                                        onClick={() => onSend(item.prompt)}
+                                        className="px-4 py-4 rounded-xl bg-zinc-900/40 hover:bg-zinc-900 
+                      border border-zinc-800 hover:border-zinc-600
+                      text-zinc-400 hover:text-zinc-200 text-sm text-left
+                      transition-all duration-200 flex items-center gap-3 group"
+                                    >
+                                        <item.icon size={16} className="text-zinc-600 group-hover:text-zinc-400" />
+                                        {item.label}
+                                    </button>
+                                ))}
+                            </div>
                         </div>
+                    )}
+
+                    <div className="py-4 space-y-1">
+                        {messages.map((message) => (
+                            <MessageBubble key={message.id} message={message} mode={mode} />
+                        ))}
+
+                        {isLoading && (
+                            <div className="px-4 py-2 max-w-4xl mx-auto w-full">
+                                <div className="flex items-center gap-2 text-zinc-500 text-sm h-8 ml-10">
+                                    <span className="text-xs">Thinking</span>
+                                    <TypingIndicator mode={mode} />
+                                </div>
+                            </div>
+                        )}
                     </div>
-                )}
 
-                {messages.map((message) => (
-                    <MessageBubble key={message.id} message={message} mode={mode} />
-                ))}
-
-                {isLoading && (
-                    <div className="max-w-3xl mx-auto w-full flex gap-4">
-                        <div className="w-8 h-8 rounded-lg bg-zinc-900 border border-zinc-800 flex items-center justify-center">
-                            <Bot size={14} className="text-zinc-500" />
-                        </div>
-                        <TypingIndicator mode={mode} />
-                    </div>
-                )}
-
-                <div ref={messagesEndRef} />
+                    <div ref={messagesEndRef} className="h-4" />
+                </div>
             </div>
 
-            {/* Input area */}
-            <InputArea onSend={onSend} isLoading={isLoading} mode={mode} />
+            {/* Input area - Sticky at bottom */}
+            <div className="z-10 bg-zinc-950 border-t border-zinc-900/50">
+                <InputArea onSend={onSend} isLoading={isLoading} mode={mode} />
+            </div>
         </div>
     );
 }

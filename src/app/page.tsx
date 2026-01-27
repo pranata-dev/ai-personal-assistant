@@ -37,12 +37,15 @@ export default function Home() {
 
   // Theme Effect (Stateless/Session)
   useEffect(() => {
+    const root = document.documentElement;
     if (theme === 'dark') {
-      document.documentElement.classList.add('dark');
-      document.documentElement.classList.remove('light');
+      root.classList.add('dark');
+      root.classList.remove('light');
+      root.style.colorScheme = 'dark';
     } else {
-      document.documentElement.classList.remove('dark');
-      document.documentElement.classList.add('light'); // Ensure light mode class exists
+      root.classList.remove('dark');
+      root.classList.add('light');
+      root.style.colorScheme = 'light';
     }
   }, [theme]);
 
@@ -180,7 +183,7 @@ export default function Home() {
   }
 
   return (
-    <div className={`h-screen flex overflow-hidden font-sans selection:bg-zinc-800 selection:text-white transition-colors duration-200 ${theme === 'dark' ? 'bg-zinc-950 text-zinc-200' : 'bg-white text-zinc-900'}`}>
+    <div className={`h-screen flex overflow-hidden font-sans transition-colors duration-200 ${theme === 'dark' ? 'bg-zinc-950 text-zinc-200 selection:bg-zinc-800 selection:text-white' : 'bg-white text-zinc-900 selection:bg-blue-100 selection:text-blue-900'}`}>
       {/* 1. Left Sidebar */}
       <Sidebar
         currentMode={currentMode}

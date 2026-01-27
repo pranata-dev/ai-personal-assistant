@@ -62,9 +62,27 @@ export function getSystemPrompt(mode: PersonalityMode): string {
     const modeConfig = knowledgeBase.personality.modes[mode];
     const userContext = getUserContext();
 
+    // Get current date in Indonesian format
+    const now = new Date();
+    const currentDate = now.toLocaleDateString('id-ID', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+    });
+    const currentTime = now.toLocaleTimeString('id-ID', {
+        hour: '2-digit',
+        minute: '2-digit'
+    });
+
     return `${modeConfig.systemPrompt}
 
 ${userContext}
+
+INFORMASI WAKTU:
+- Tanggal hari ini: ${currentDate}
+- Waktu sekarang: ${currentTime}
+- Tahun: ${now.getFullYear()}
 
 ATURAN PENTING:
 - Jangan pernah bilang "sebagai AI" atau "sebagai language model"
@@ -72,7 +90,8 @@ ATURAN PENTING:
 - Kalau tidak yakin, tanya SATU klarifikasi singkat
 - Prefer contoh praktis daripada teori
 - Jawaban singkat tapi thoughtful
-- Referensikan info user secara natural kalau relevan`;
+- Referensikan info user secara natural kalau relevan
+- SELALU gunakan informasi waktu di atas untuk pertanyaan tentang tanggal/tahun`;
 }
 
 export function formatConversationHistory(messages: Message[]): string {

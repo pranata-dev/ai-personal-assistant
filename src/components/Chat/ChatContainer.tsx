@@ -2,6 +2,7 @@
 
 import { useRef, useEffect } from 'react';
 import { Message, PersonalityMode } from '@/types';
+import { t, Language } from '@/lib/i18n';
 import MessageBubble from './MessageBubble';
 import InputArea from './InputArea';
 import { Bot, Sparkles, Terminal } from 'lucide-react';
@@ -12,9 +13,11 @@ interface ChatContainerProps {
     mode: PersonalityMode;
     isLoading: boolean;
     onSend: (message: string) => void;
+    spokenLanguage: 'id-ID' | 'en-US' | 'auto';
+    language: Language;
 }
 
-export default function ChatContainer({ messages, mode, isLoading, onSend }: ChatContainerProps) {
+export default function ChatContainer({ messages, mode, isLoading, onSend, spokenLanguage, language }: ChatContainerProps) {
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
     const scrollToBottom = () => {
@@ -29,33 +32,33 @@ export default function ChatContainer({ messages, mode, isLoading, onSend }: Cha
         <div className="flex flex-col h-full relative">
             {/* Messages area */}
             <div className="flex-1 overflow-y-auto w-full scrollbar-thin">
-                <div className="min-h-full pb-4"> {/* Padding bottom for sticky input */}
+                <div className="min-h-full pb-4">
                     {messages.length === 0 && (
                         <div className="flex flex-col items-center justify-center min-h-[500px] text-center px-4 animate-fade-in">
-                            <div className="w-16 h-16 rounded-2xl bg-zinc-900 border border-zinc-800 flex items-center justify-center mb-6 text-zinc-500">
+                            <div className="w-16 h-16 rounded-2xl bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 flex items-center justify-center mb-6 text-zinc-400 dark:text-zinc-500">
                                 <Bot size={32} />
                             </div>
-                            <h2 className="text-xl font-medium text-zinc-200 mb-2">
-                                Ready to collaborate
+                            <h2 className="text-xl font-medium text-zinc-800 dark:text-zinc-200 mb-2">
+                                {t('readyToCollaborate', language)}
                             </h2>
                             <p className="text-zinc-500 text-sm max-w-sm leading-relaxed mb-8">
-                                Select a mode or start typing to begin. Your session is private and stateless.
+                                {t('emptyStateDesc', language)}
                             </p>
 
                             <div className="grid grid-cols-2 gap-3 max-w-lg w-full">
                                 {[
-                                    { label: 'Draft Email', icon: Terminal, prompt: 'Draft a professional email regarding...' },
-                                    { label: 'Brainstorm Ideas', icon: Sparkles, prompt: 'Brainstorm creative ideas for...' },
+                                    { label: t('draftEmail', language), icon: Terminal, prompt: 'Draft a professional email regarding...' },
+                                    { label: t('brainstormIdeas', language), icon: Sparkles, prompt: 'Brainstorm creative ideas for...' },
                                 ].map((item) => (
                                     <button
                                         key={item.label}
                                         onClick={() => onSend(item.prompt)}
-                                        className="px-4 py-4 rounded-xl bg-zinc-900/40 hover:bg-zinc-900 
-                      border border-zinc-800 hover:border-zinc-600
-                      text-zinc-400 hover:text-zinc-200 text-sm text-left
+                                        className="px-4 py-4 rounded-xl bg-zinc-50 dark:bg-zinc-900/40 hover:bg-zinc-100 dark:hover:bg-zinc-900 
+                      border border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-600
+                      text-zinc-500 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200 text-sm text-left
                       transition-all duration-200 flex items-center gap-3 group"
                                     >
-                                        <item.icon size={16} className="text-zinc-600 group-hover:text-zinc-400" />
+                                        <item.icon size={16} className="text-zinc-400 dark:text-zinc-600 group-hover:text-zinc-600 dark:group-hover:text-zinc-400" />
                                         {item.label}
                                     </button>
                                 ))}
@@ -83,8 +86,8 @@ export default function ChatContainer({ messages, mode, isLoading, onSend }: Cha
             </div>
 
             {/* Input area - Sticky at bottom */}
-            <div className="z-10 bg-zinc-950 border-t border-zinc-900/50">
-                <InputArea onSend={onSend} isLoading={isLoading} mode={mode} />
+            <div className="z-10 bg-white dark:bg-zinc-950 border-t border-zinc-200 dark:border-zinc-900/50 transition-colors duration-200">
+                <InputArea onSend={onSend} isLoading={isLoading} mode={mode} spokenLanguage={spokenLanguage} language={language} />
             </div>
         </div>
     );

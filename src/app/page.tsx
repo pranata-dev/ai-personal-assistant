@@ -9,25 +9,45 @@ import ChatContainer from '@/components/Chat/ChatContainer';
 import Sidebar from '@/components/Workspace/Sidebar';
 import RightPanel from '@/components/Workspace/RightPanel';
 import MainArea from '@/components/Workspace/MainArea';
+import SettingsModal from '@/components/SettingsModal';
+import { Language } from '@/lib/i18n';
 
 export default function Home() {
   const [memory, setMemory] = useState<Memory | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+
+  // Settings State
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [theme, setTheme] = useState<'dark' | 'light'>('dark');
+  const [spokenLanguage, setSpokenLanguage] = useState<'id-ID' | 'en-US' | 'auto'>('auto');
 
   // Load memory on mount - NO LocalStorage
   useEffect(() => {
     setMemory(loadMemory());
   }, []);
 
-  // Save memory when it changes - NO LocalStorage (function is no-op)
+  // Save memory when it changes
   useEffect(() => {
     if (memory) {
       saveMemory(memory);
     }
   }, [memory]);
 
+  // Theme Effect (Stateless/Session)
+  useEffect(() => {
+    if (theme === 'dark') {
+      document.documentElement.classList.add('dark');
+      document.documentElement.classList.remove('light');
+    } else {
+      document.documentElement.classList.remove('dark');
+      document.documentElement.classList.add('light'); // Ensure light mode class exists
+    }
+  }, [theme]);
+
+  // Derive memory-based stats
   const currentMode = memory?.preferences.currentMode ?? 'bestfriend';
   const currentModelId = memory?.preferences.currentModelId ?? DEFAULT_MODEL_ID;
+  const currentLanguage = (memory?.preferences.language as Language) ?? 'en';
   const messages = memory?.conversations ?? [];
 
   const createMessage = (content: string, role: 'user' | 'assistant'): Message => ({
@@ -48,6 +68,21 @@ export default function Home() {
     if (!memory) return;
     const updatedMemory = setModel(memory, newModelId);
     setMemory(updatedMemory);
+  }, [memory]);
+
+  // FIX: This now correctly updates the language in memory
+  const handleLanguageChange = useCallback((lang: Language) => {
+    if (!memory) return;
+    setMemory(prev => {
+      if (!prev) return null;
+      return {
+        ...prev,
+        preferences: {
+          ...prev.preferences,
+          language: lang
+        }
+      };
+    });
   }, [memory]);
 
   const handleReset = useCallback(() => {
@@ -143,14 +178,16 @@ export default function Home() {
   }
 
   return (
-    <div className="h-screen flex bg-zinc-950 overflow-hidden text-zinc-200 font-sans selection:bg-zinc-800 selection:text-white">
+    <div className={`h-screen flex overflow-hidden font-sans selection:bg-zinc-800 selection:text-white transition-colors duration-200 ${theme === 'dark' ? 'bg-zinc-950 text-zinc-200' : 'bg-white text-zinc-900'}`}>
       {/* 1. Left Sidebar */}
       <Sidebar
         currentMode={currentMode}
         currentModelId={currentModelId}
+        language={currentLanguage}
         onModeChange={handleModeChange}
         onModelChange={handleModelChange}
         onReset={handleReset}
+        onOpenSettings={() => setIsSettingsOpen(true)}
       />
 
       {/* 2. Main Chat Area */}
@@ -160,13 +197,28 @@ export default function Home() {
           mode={currentMode}
           isLoading={isLoading}
           onSend={handleSend}
+          spokenLanguage={spokenLanguage}
+          language={currentLanguage}
         />
+        {/* Transparent wrapper/overlay for modals if needed */}
       </MainArea>
 
       {/* 3. Right Panel (System Status) */}
       <div className="hidden xl:block">
         <RightPanel memory={memory} mode={currentMode} />
       </div>
+
+      {/* Settings Modal */}
+      <SettingsModal
+        isOpen={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
+        language={currentLanguage}
+        setLanguage={handleLanguageChange}
+        theme={theme}
+        setTheme={setTheme}
+        spokenLanguage={spokenLanguage}
+        setSpokenLanguage={setSpokenLanguage}
+      />
     </div>
   );
 }

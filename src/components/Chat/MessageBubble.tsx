@@ -23,10 +23,15 @@ export default function MessageBubble({ message, mode }: MessageBubbleProps) {
         return content
             .split('\n')
             .map((line, i) => {
-                line = line.replace(/\*\*(.*?)\*\*/g, '<span class="font-semibold text-white">$1</span>');
-                line = line.replace(/`([^`]+)`/g, '<code class="bg-zinc-800 px-1.5 py-0.5 rounded text-[13px] font-mono text-zinc-300 border border-zinc-700/50">$1</code>');
+                // Bold: text-zinc-900 (light) / text-white (dark)
+                line = line.replace(/\*\*(.*?)\*\*/g, '<span class="font-semibold text-zinc-900 dark:text-white">$1</span>');
+
+                // Code: bg-zinc-100/zinc-800
+                line = line.replace(/`([^`]+)`/g, '<code class="bg-zinc-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded text-[13px] font-mono text-zinc-800 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700/50">$1</code>');
+
+                // List: bullet bg-zinc-400 (light) / zinc-600 (dark)
                 if (line.startsWith('- ')) {
-                    line = `<div class="flex gap-3 items-start"><span class="mt-1.5 w-1.5 h-1.5 rounded-full bg-zinc-600 flex-shrink-0"></span><span>${line.slice(2)}</span></div>`;
+                    line = `<div class="flex gap-3 items-start"><span class="mt-1.5 w-1.5 h-1.5 rounded-full bg-zinc-400 dark:bg-zinc-600 flex-shrink-0"></span><span>${line.slice(2)}</span></div>`;
                 }
                 return line;
             })
@@ -34,15 +39,15 @@ export default function MessageBubble({ message, mode }: MessageBubbleProps) {
     };
 
     return (
-        <div className={`group flex gap-5 max-w-4xl mx-auto w-full px-4 py-2 hover:bg-zinc-900/40 rounded-xl transition-colors ${isUser ? '' : ''}`}>
+        <div className={`group flex gap-5 max-w-4xl mx-auto w-full px-4 py-2 hover:bg-zinc-50 dark:hover:bg-zinc-900/40 rounded-xl transition-colors ${isUser ? '' : ''}`}>
             {/* Icon Column */}
             <div className="flex-shrink-0 w-8 pt-1">
                 {isUser ? (
-                    <div className="w-8 h-8 rounded-lg bg-zinc-800 flex items-center justify-center text-zinc-400">
+                    <div className="w-8 h-8 rounded-lg bg-zinc-200 dark:bg-zinc-800 flex items-center justify-center text-zinc-500 dark:text-zinc-400">
                         <User size={16} />
                     </div>
                 ) : (
-                    <div className="w-8 h-8 rounded-lg bg-zinc-100 flex items-center justify-center text-zinc-900">
+                    <div className="w-8 h-8 rounded-lg bg-zinc-900 dark:bg-zinc-100 flex items-center justify-center text-zinc-100 dark:text-zinc-900">
                         <Bot size={16} />
                     </div>
                 )}
@@ -51,16 +56,16 @@ export default function MessageBubble({ message, mode }: MessageBubbleProps) {
             {/* Content Column */}
             <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-1">
-                    <span className="font-semibold text-sm text-zinc-200">
+                    <span className="font-semibold text-sm text-zinc-800 dark:text-zinc-200">
                         {isUser ? 'You' : 'AI Assistant'}
                     </span>
-                    <span className="text-[10px] text-zinc-600">
+                    <span className="text-[10px] text-zinc-500 dark:text-zinc-600">
                         {new Date(message.timestamp).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
                     </span>
                 </div>
 
                 <div
-                    className="text-[15px] leading-relaxed text-zinc-300 markdown-content"
+                    className="text-[15px] leading-relaxed text-zinc-700 dark:text-zinc-300 markdown-content"
                     dangerouslySetInnerHTML={{ __html: formatContent(message.content) }}
                 />
 
@@ -69,7 +74,7 @@ export default function MessageBubble({ message, mode }: MessageBubbleProps) {
                     {!isUser && (
                         <button
                             onClick={handleCopy}
-                            className="p-1.5 rounded bg-zinc-900 border border-zinc-800 text-zinc-500 hover:text-zinc-200 hover:border-zinc-700 transition-all"
+                            className="p-1.5 rounded bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200 hover:border-zinc-300 dark:hover:border-zinc-700 transition-all"
                             title="Copy"
                         >
                             {copied ? <Check size={12} /> : <Copy size={12} />}

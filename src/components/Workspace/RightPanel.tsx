@@ -1,8 +1,9 @@
 'use client';
 
 import { Memory, PersonalityMode } from '@/types';
-import { Layers, Database, Shield, Cpu } from 'lucide-react';
+import { Layers, Shield, Cpu } from 'lucide-react';
 import { getModelById } from '@/lib/models';
+import { t, Language } from '@/lib/i18n';
 
 interface RightPanelProps {
     memory: Memory | null;
@@ -14,12 +15,13 @@ export default function RightPanel({ memory, mode }: RightPanelProps) {
 
     const currentModelId = memory.preferences.currentModelId;
     const currentModel = getModelById(currentModelId);
+    const language = memory.preferences.language as Language || 'en';
 
     return (
-        <div className="w-[300px] bg-zinc-950 border-l border-zinc-900 h-full flex flex-col flex-shrink-0">
+        <div className="w-[300px] bg-white dark:bg-zinc-950 border-l border-zinc-200 dark:border-zinc-900 h-full flex flex-col flex-shrink-0 transition-colors duration-200">
             {/* Header */}
-            <div className="h-14 flex items-center px-4 border-b border-zinc-900">
-                <span className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">System Status</span>
+            <div className="h-14 flex items-center px-4 border-b border-zinc-200 dark:border-zinc-900">
+                <span className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">{t('systemStatus', language)}</span>
             </div>
 
             <div className="flex-1 overflow-y-auto p-4 space-y-6">
@@ -27,28 +29,28 @@ export default function RightPanel({ memory, mode }: RightPanelProps) {
                 <div>
                     <h3 className="text-xs font-medium text-zinc-400 mb-3 flex items-center gap-2">
                         <Layers size={12} />
-                        ACTIVE MODE
+                        {t('activeMode', language)}
                     </h3>
-                    <div className="bg-zinc-900/50 border border-zinc-900 rounded-lg p-3">
-                        <div className="text-sm font-medium text-zinc-200 capitalize mb-1">{mode}</div>
+                    <div className="bg-zinc-50 dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-900 rounded-lg p-3">
+                        <div className="text-sm font-medium text-zinc-800 dark:text-zinc-200 capitalize mb-1">{mode}</div>
                         <div className="text-xs text-zinc-500 leading-relaxed">
                             {getModeDescription(mode)}
                         </div>
                     </div>
                 </div>
 
-                {/* Model Info (NEW) */}
+                {/* Model Info */}
                 <div>
                     <h3 className="text-xs font-medium text-zinc-400 mb-3 flex items-center gap-2">
                         <Cpu size={12} />
-                        MODEL ENGINE
+                        {t('modelEngine', language)}
                     </h3>
-                    <div className="bg-zinc-900/50 border border-zinc-900 rounded-lg p-3">
-                        <div className="text-sm font-medium text-zinc-200 mb-1">{currentModel?.name || 'Unknown Model'}</div>
+                    <div className="bg-zinc-50 dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-900 rounded-lg p-3">
+                        <div className="text-sm font-medium text-zinc-800 dark:text-zinc-200 mb-1">{currentModel?.name || t('unknownModel', language)}</div>
                         <p className="text-[10px] text-zinc-500 leading-relaxed mb-2">
                             {currentModel?.description}
                         </p>
-                        <div className="inline-flex items-center px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-400 text-[10px] border border-blue-500/20">
+                        <div className="inline-flex items-center px-1.5 py-0.5 rounded bg-blue-100 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 text-[10px] border border-blue-200 dark:border-blue-500/20">
                             {currentModel?.role.toUpperCase()}
                         </div>
                     </div>
@@ -58,15 +60,15 @@ export default function RightPanel({ memory, mode }: RightPanelProps) {
                 <div>
                     <h3 className="text-xs font-medium text-zinc-400 mb-3 flex items-center gap-2">
                         <Shield size={12} />
-                        PRIVACY
+                        {t('privacy', language)}
                     </h3>
-                    <div className="bg-zinc-900/50 rounded-lg p-3 border border-zinc-900/50">
+                    <div className="bg-zinc-50 dark:bg-zinc-900/50 rounded-lg p-3 border border-zinc-200 dark:border-zinc-900/50">
                         <div className="flex items-center gap-2 text-xs text-zinc-400">
                             <div className="w-1.5 h-1.5 rounded-full bg-green-500"></div>
-                            <span>Stateless Session</span>
+                            <span>{t('statelessSession', language)}</span>
                         </div>
-                        <p className="text-[10px] text-zinc-600 mt-2 leading-relaxed">
-                            No personal data is stored. Context is cleared upon refresh.
+                        <p className="text-[10px] text-zinc-500 mt-2 leading-relaxed">
+                            {t('privacyDesc', language)}
                         </p>
                     </div>
                 </div>

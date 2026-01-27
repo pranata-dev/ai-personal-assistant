@@ -35,18 +35,26 @@ export default function Home() {
     }
   }, [memory]);
 
-  // Theme Effect (Stateless/Session)
+  // Theme Effect - Apply dark/light mode class to html element
   useEffect(() => {
     const root = document.documentElement;
+
+    // Remove both classes first to ensure clean state
+    root.classList.remove('dark', 'light');
+
+    // Add the appropriate class based on theme
     if (theme === 'dark') {
       root.classList.add('dark');
-      root.classList.remove('light');
       root.style.colorScheme = 'dark';
     } else {
-      root.classList.remove('dark');
       root.classList.add('light');
       root.style.colorScheme = 'light';
     }
+
+    // Cleanup function
+    return () => {
+      root.classList.remove('dark', 'light');
+    };
   }, [theme]);
 
   // Derive memory-based stats

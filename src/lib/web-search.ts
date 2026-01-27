@@ -1,4 +1,4 @@
-// Web search using DuckDuckGo Instant Answer API (no API key needed!)
+// Web search using multiple fallback methods
 
 interface SearchResult {
     title: string;
@@ -6,70 +6,135 @@ interface SearchResult {
     url: string;
 }
 
-interface DDGResponse {
-    Abstract?: string;
-    AbstractText?: string;
-    AbstractSource?: string;
-    AbstractURL?: string;
-    RelatedTopics?: Array<{
-        Text?: string;
-        FirstURL?: string;
-    }>;
-    Answer?: string;
-}
-
-export async function searchWeb(query: string): Promise<SearchResult[]> {
+// Use DuckDuckGo HTML search (more reliable than Instant Answer API)
+async function searchDuckDuckGo(query: string): Promise<SearchResult[]> {
     try {
-        // Use DuckDuckGo Instant Answer API
         const encodedQuery = encodeURIComponent(query);
-        const response = await fetch(
-            `https://api.duckduckgo.com/?q=${encodedQuery}&format=json&no_html=1&skip_disambig=1`
-        );
+
+        // Use DuckDuckGo lite version which returns simpler HTML
+        const response = await fetch(`https://lite.duckduckgo.com/lite/?q=${encodedQuery}`, {
+            headers: {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+            }
+        });
 
         if (!response.ok) {
-            console.error('Search failed:', response.status);
+            console.log('DuckDuckGo search failed:', response.status);
             return [];
         }
 
-        const data: DDGResponse = await response.json();
+        const html = await response.text();
         const results: SearchResult[] = [];
 
-        // Add abstract if available
-        if (data.AbstractText) {
+        // Simple regex parsing for results
+        // Look for result links and snippets
+        const linkRegex = /<a[^>]+class="result-link"[^>]*href="([^"]+)"[^>]*>([^<]+)<\/a>/gi;
+        const snippetRegex = /<td[^>]*class="result-snippet"[^>]*>([^<]+)/gi;
+
+        const links: { url: string; title: string }[] = [];
+        let match;
+
+        while ((match = linkRegex.exec(html)) !== null) {
+            links.push({ url: match[1], title: match[2] });
+        }
+
+        const snippets: string[] = [];
+        while ((match = snippetRegex.exec(html)) !== null) {
+            snippets.push(match[1].trim());
+        }
+
+        for (let i = 0; i < Math.min(links.length, 5); i++) {
             results.push({
-                title: data.AbstractSource || 'Summary',
-                snippet: data.AbstractText,
-                url: data.AbstractURL || ''
+                title: links[i]?.title || 'Result',
+                snippet: snippets[i] || '',
+                url: links[i]?.url || ''
             });
         }
 
-        // Add answer if available
-        if (data.Answer) {
-            results.push({
-                title: 'Quick Answer',
-                snippet: data.Answer,
-                url: ''
-            });
-        }
-
-        // Add related topics
-        if (data.RelatedTopics) {
-            for (const topic of data.RelatedTopics.slice(0, 5)) {
-                if (topic.Text && topic.FirstURL) {
-                    results.push({
-                        title: topic.Text.split(' - ')[0] || 'Related',
-                        snippet: topic.Text,
-                        url: topic.FirstURL
-                    });
-                }
-            }
-        }
-
-        return results.slice(0, 5); // Return max 5 results
+        return results;
     } catch (error) {
-        console.error('Search error:', error);
+        console.error('DuckDuckGo search error:', error);
         return [];
     }
+}
+
+// Fallback: Use Wikipedia API for "apa itu" / "siapa" questions
+async function searchWikipedia(query: string): Promise<SearchResult[]> {
+    try {
+        // Clean query for Wikipedia
+        const cleanQuery = query
+            .replace(/apa itu\s*/i, '')
+            .replace(/siapa\s*/i, '')
+            .replace(/what is\s*/i, '')
+            .replace(/who is\s*/i, '')
+            .replace(/\?/g, '')
+            .trim();
+
+        const encodedQuery = encodeURIComponent(cleanQuery);
+        const response = await fetch(
+            `https://id.wikipedia.org/api/rest_v1/page/summary/${encodedQuery}`
+        );
+
+        if (!response.ok) {
+            // Try English Wikipedia
+            const enResponse = await fetch(
+                `https://en.wikipedia.org/api/rest_v1/page/summary/${encodedQuery}`
+            );
+            if (!enResponse.ok) return [];
+
+            const data = await enResponse.json();
+            if (data.extract) {
+                return [{
+                    title: data.title || cleanQuery,
+                    snippet: data.extract,
+                    url: data.content_urls?.desktop?.page || ''
+                }];
+            }
+            return [];
+        }
+
+        const data = await response.json();
+        if (data.extract) {
+            return [{
+                title: data.title || cleanQuery,
+                snippet: data.extract,
+                url: data.content_urls?.desktop?.page || ''
+            }];
+        }
+
+        return [];
+    } catch (error) {
+        console.error('Wikipedia search error:', error);
+        return [];
+    }
+}
+
+export async function searchWeb(query: string): Promise<SearchResult[]> {
+    console.log('🔍 Starting web search for:', query);
+
+    // Check if it's a definition/person question - use Wikipedia
+    const isDefinitionQuery = /apa itu|siapa|what is|who is/i.test(query);
+
+    if (isDefinitionQuery) {
+        console.log('📚 Using Wikipedia for definition query');
+        const wikiResults = await searchWikipedia(query);
+        if (wikiResults.length > 0) {
+            console.log('✅ Wikipedia found results');
+            return wikiResults;
+        }
+    }
+
+    // For other queries, try DuckDuckGo
+    console.log('🦆 Using DuckDuckGo search');
+    const ddgResults = await searchDuckDuckGo(query);
+
+    if (ddgResults.length > 0) {
+        console.log('✅ DuckDuckGo found', ddgResults.length, 'results');
+        return ddgResults;
+    }
+
+    console.log('❌ No search results found');
+    return [];
 }
 
 export function shouldSearch(message: string): boolean {
@@ -83,24 +148,35 @@ export function shouldSearch(message: string): boolean {
         'update',
         'search',
         'cari',
+        'carikan',
         'google',
         'info tentang',
         'apa itu',
         'what is',
         'who is',
+        'siapa itu',
         'siapa',
         'kapan',
-        'when',
+        'when did',
         'how to',
         'cara',
+        'bagaimana',
         'harga',
         'price',
         'cuaca',
-        'weather'
+        'weather',
+        'jelaskan',
+        'explain'
     ];
 
     const lowerMessage = message.toLowerCase();
-    return searchTriggers.some(trigger => lowerMessage.includes(trigger));
+    const shouldTrigger = searchTriggers.some(trigger => lowerMessage.includes(trigger));
+
+    if (shouldTrigger) {
+        console.log('🎯 Search triggered by keyword match');
+    }
+
+    return shouldTrigger;
 }
 
 export function formatSearchResults(results: SearchResult[]): string {
@@ -110,7 +186,7 @@ export function formatSearchResults(results: SearchResult[]): string {
 
     let formatted = '\n\n📌 **Hasil Pencarian Web:**\n';
     for (const result of results) {
-        formatted += `\n• **${result.title}**\n  ${result.snippet.slice(0, 200)}${result.snippet.length > 200 ? '...' : ''}\n`;
+        formatted += `\n• **${result.title}**\n  ${result.snippet.slice(0, 300)}${result.snippet.length > 300 ? '...' : ''}\n`;
         if (result.url) {
             formatted += `  🔗 ${result.url}\n`;
         }

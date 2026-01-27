@@ -1,7 +1,7 @@
 'use client';
 
 import { Memory, PersonalityMode } from '@/types';
-import { Brain, Layers, Database, ChevronRight } from 'lucide-react';
+import { Layers, Database, Shield } from 'lucide-react';
 
 interface RightPanelProps {
     memory: Memory | null;
@@ -15,7 +15,7 @@ export default function RightPanel({ memory, mode }: RightPanelProps) {
         <div className="w-[300px] bg-zinc-950 border-l border-zinc-900 h-full flex flex-col flex-shrink-0">
             {/* Header */}
             <div className="h-14 flex items-center px-4 border-b border-zinc-900">
-                <span className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">Context & Memory</span>
+                <span className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">System Status</span>
             </div>
 
             <div className="flex-1 overflow-y-auto p-4 space-y-6">
@@ -33,16 +33,20 @@ export default function RightPanel({ memory, mode }: RightPanelProps) {
                     </div>
                 </div>
 
-                {/* User Profile Summary */}
+                {/* Privacy Badge */}
                 <div>
                     <h3 className="text-xs font-medium text-zinc-400 mb-3 flex items-center gap-2">
-                        <UserIcon />
-                        USER PROFILE
+                        <Shield size={12} />
+                        PRIVACY
                     </h3>
-                    <div className="space-y-2">
-                        <ContextItem label="Role" value="Tech Student & Creator" />
-                        <ContextItem label="Focus" value="AI, Web Dev, Automation" />
-                        <ContextItem label="Language" value="Bahasa Indonesia (ID)" />
+                    <div className="bg-zinc-900/50 rounded-lg p-3 border border-zinc-900/50">
+                        <div className="flex items-center gap-2 text-xs text-zinc-400">
+                            <div className="w-1.5 h-1.5 rounded-full bg-green-500"></div>
+                            <span>Stateless Session</span>
+                        </div>
+                        <p className="text-[10px] text-zinc-600 mt-2 leading-relaxed">
+                            No personal data is stored. Context is cleared upon refresh.
+                        </p>
                     </div>
                 </div>
 
@@ -54,7 +58,7 @@ export default function RightPanel({ memory, mode }: RightPanelProps) {
                     </h3>
                     <div className="bg-zinc-900/50 rounded-lg p-3 space-y-2">
                         <div className="flex justify-between text-xs">
-                            <span className="text-zinc-500">Memory</span>
+                            <span className="text-zinc-500">Session</span>
                             <span className="text-zinc-300">Active</span>
                         </div>
                         <div className="flex justify-between text-xs">
@@ -65,24 +69,6 @@ export default function RightPanel({ memory, mode }: RightPanelProps) {
                 </div>
             </div>
         </div>
-    );
-}
-
-function ContextItem({ label, value }: { label: string, value: string }) {
-    return (
-        <div className="flex items-start justify-between group cursor-default">
-            <span className="text-xs text-zinc-500 group-hover:text-zinc-400 transition-colors">{label}</span>
-            <span className="text-xs text-zinc-300 text-right max-w-[150px] truncate">{value}</span>
-        </div>
-    );
-}
-
-function UserIcon() {
-    return (
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
-            <circle cx="12" cy="7" r="4" />
-        </svg>
     );
 }
 

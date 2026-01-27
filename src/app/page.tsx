@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Message, PersonalityMode, Memory } from '@/types';
 import { loadMemory, saveMemory, addMessage, setMode, resetMemory, getRecentContext } from '@/lib/memory';
-import { detectIntent, getHelpMessage, getModeChangeMessage, getResetMemoryMessage, getPromptEngineerResponse, getThoughtDumpResponse } from '@/lib/ai-engine';
+import { detectIntent, getHelpMessage, getPromptEngineerResponse, getThoughtDumpResponse } from '@/lib/ai-engine';
 import ChatContainer from '@/components/Chat/ChatContainer';
 import Sidebar from '@/components/Workspace/Sidebar';
 import RightPanel from '@/components/Workspace/RightPanel';
@@ -13,12 +13,12 @@ export default function Home() {
   const [memory, setMemory] = useState<Memory | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Load memory on mount
+  // Load memory on mount - NO LocalStorage
   useEffect(() => {
     setMemory(loadMemory());
   }, []);
 
-  // Save memory when it changes
+  // Save memory when it changes - NO LocalStorage (function is no-op)
   useEffect(() => {
     if (memory) {
       saveMemory(memory);
@@ -60,7 +60,6 @@ export default function Home() {
 
     // Handle special intents locally
     if (intent.type === 'mode_switch' && intent.mode) {
-      // Just switch mode, no message
       const modeMem = setMode(updatedMemory, intent.mode);
       setMemory(modeMem);
       return;
@@ -153,12 +152,10 @@ export default function Home() {
         />
       </MainArea>
 
-      {/* 3. Right Panel (Optional) */}
-      {messages.length > 0 && (
-        <div className="hidden xl:block">
-          <RightPanel memory={memory} mode={currentMode} />
-        </div>
-      )}
+      {/* 3. Right Panel (System Status) */}
+      <div className="hidden xl:block">
+        <RightPanel memory={memory} mode={currentMode} />
+      </div>
     </div>
   );
 }

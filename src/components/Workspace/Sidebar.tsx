@@ -2,7 +2,6 @@
 
 import { PersonalityMode } from '@/types';
 import { BookOpen, User, Terminal, Sparkles, Settings, History, Plus } from 'lucide-react';
-import { knowledgeBase } from '@/lib/knowledge-base';
 
 interface SidebarProps {
     currentMode: PersonalityMode;

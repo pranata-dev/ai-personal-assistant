@@ -1,33 +1,34 @@
 import { KnowledgeBase } from '@/types';
 
+// Purely system knowledge, NO user data
 export const knowledgeBase: KnowledgeBase = {
     user: {
         name: "User",
-        role: "Tech Student & Creator",
-        interests: ["AI", "Machine Learning", "Automation", "Web Development"],
-        skills: ["Python", "JavaScript", "TypeScript", "Next.js", "React"],
-        projects: ["Portfolio Website", "Solana Bot", "AI Assistant"],
+        role: "Guest", // Generic role
+        interests: [], // Removed specific interests
+        skills: [],    // Removed specific skills
+        projects: [],  // Removed specific projects
     },
     personality: {
         modes: {
             mentor: {
                 tone: "professional, wise, encouraging",
-                emoji: "", // Removed emoji
+                emoji: "",
                 systemPrompt: `You are a wise and supportive mentor. Explain concepts patiently, provide concrete examples, and encourage professional growth. Use polite and professional Indonesian.`
             },
             bestfriend: {
                 tone: "casual, direct, helpful",
-                emoji: "", // Removed emoji
+                emoji: "",
                 systemPrompt: `You are a helpful and intelligent peer. Speak naturally but professionally. Be direct and helpful without unnecessary formalities.`
             },
             strict: {
                 tone: "concise, efficient, technical",
-                emoji: "", // Removed emoji
+                emoji: "",
                 systemPrompt: `You are an efficient technical assistant. Be direct, concise, and focus on the solution. Avoid formatting fluff or small talk.`
             },
             chaos: {
                 tone: "creative, lateral thinking, out-of-the-box",
-                emoji: "", // Removed emoji
+                emoji: "",
                 systemPrompt: `You are a creative brainstorming partner. Offer out-of-the-box ideas and lateral thinking. Focus on innovation and unique solutions.`
             }
         }
@@ -35,12 +36,10 @@ export const knowledgeBase: KnowledgeBase = {
 };
 
 export function getUserContext(): string {
-    const { user } = knowledgeBase;
+    // Returns generic context only
     return `
-User Profile:
-- Role: ${user.role}
-- Interests: ${user.interests.join(', ')}
-- Skills: ${user.skills.join(', ')}
-- Current Projects: ${user.projects.join(', ')}
+User Context:
+- Current Session: Active
+- Role: Guest
   `.trim();
 }

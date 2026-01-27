@@ -36,10 +36,10 @@ export default function ChatContainer({ messages, mode, isLoading, onSend }: Cha
                                 <Bot size={32} />
                             </div>
                             <h2 className="text-xl font-medium text-zinc-200 mb-2">
-                                Good afternoon, User
+                                Ready to collaborate
                             </h2>
                             <p className="text-zinc-500 text-sm max-w-sm leading-relaxed mb-8">
-                                Ready to collaborate. Select a mode or start typing.
+                                Select a mode or start typing to begin. Your session is private and stateless.
                             </p>
 
                             <div className="grid grid-cols-2 gap-3 max-w-lg w-full">

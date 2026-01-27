@@ -1,4 +1,4 @@
-// Web search using multiple fallback methods
+// Web search using Wikipedia REST API (most reliable free option)
 
 interface SearchResult {
     title: string;
@@ -6,105 +6,108 @@ interface SearchResult {
     url: string;
 }
 
-// Use DuckDuckGo HTML search (more reliable than Instant Answer API)
-async function searchDuckDuckGo(query: string): Promise<SearchResult[]> {
+// Wikipedia Search API - works reliably!
+async function searchWikipedia(query: string): Promise<SearchResult[]> {
     try {
-        const encodedQuery = encodeURIComponent(query);
+        // Clean query
+        const cleanQuery = query
+            .replace(/apa itu\s*/gi, '')
+            .replace(/siapa\s*(itu)?\s*/gi, '')
+            .replace(/what is\s*/gi, '')
+            .replace(/who is\s*/gi, '')
+            .replace(/jelaskan\s*(tentang)?\s*/gi, '')
+            .replace(/explain\s*/gi, '')
+            .replace(/berita\s*(tentang|terbaru)?\s*/gi, '')
+            .replace(/info\s*(tentang)?\s*/gi, '')
+            .replace(/cari\s*(tentang|kan)?\s*/gi, '')
+            .replace(/\?/g, '')
+            .trim();
 
-        // Use DuckDuckGo lite version which returns simpler HTML
-        const response = await fetch(`https://lite.duckduckgo.com/lite/?q=${encodedQuery}`, {
-            headers: {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-            }
-        });
+        if (!cleanQuery) return [];
 
-        if (!response.ok) {
-            console.log('DuckDuckGo search failed:', response.status);
-            return [];
-        }
+        console.log('📚 Wikipedia search for:', cleanQuery);
 
-        const html = await response.text();
-        const results: SearchResult[] = [];
+        // First, try Indonesian Wikipedia
+        const idResults = await fetchWikipediaSummary(cleanQuery, 'id');
+        if (idResults.length > 0) return idResults;
 
-        // Simple regex parsing for results
-        // Look for result links and snippets
-        const linkRegex = /<a[^>]+class="result-link"[^>]*href="([^"]+)"[^>]*>([^<]+)<\/a>/gi;
-        const snippetRegex = /<td[^>]*class="result-snippet"[^>]*>([^<]+)/gi;
+        // Fallback to English Wikipedia
+        const enResults = await fetchWikipediaSummary(cleanQuery, 'en');
+        if (enResults.length > 0) return enResults;
 
-        const links: { url: string; title: string }[] = [];
-        let match;
-
-        while ((match = linkRegex.exec(html)) !== null) {
-            links.push({ url: match[1], title: match[2] });
-        }
-
-        const snippets: string[] = [];
-        while ((match = snippetRegex.exec(html)) !== null) {
-            snippets.push(match[1].trim());
-        }
-
-        for (let i = 0; i < Math.min(links.length, 5); i++) {
-            results.push({
-                title: links[i]?.title || 'Result',
-                snippet: snippets[i] || '',
-                url: links[i]?.url || ''
-            });
-        }
-
-        return results;
+        // If direct lookup fails, try search API
+        return await searchWikipediaAPI(cleanQuery);
     } catch (error) {
-        console.error('DuckDuckGo search error:', error);
+        console.error('Wikipedia search error:', error);
         return [];
     }
 }
 
-// Fallback: Use Wikipedia API for "apa itu" / "siapa" questions
-async function searchWikipedia(query: string): Promise<SearchResult[]> {
+async function fetchWikipediaSummary(query: string, lang: 'id' | 'en'): Promise<SearchResult[]> {
     try {
-        // Clean query for Wikipedia
-        const cleanQuery = query
-            .replace(/apa itu\s*/i, '')
-            .replace(/siapa\s*/i, '')
-            .replace(/what is\s*/i, '')
-            .replace(/who is\s*/i, '')
-            .replace(/\?/g, '')
-            .trim();
-
-        const encodedQuery = encodeURIComponent(cleanQuery);
+        const encodedQuery = encodeURIComponent(query);
         const response = await fetch(
-            `https://id.wikipedia.org/api/rest_v1/page/summary/${encodedQuery}`
+            `https://${lang}.wikipedia.org/api/rest_v1/page/summary/${encodedQuery}`,
+            {
+                headers: {
+                    'User-Agent': 'AIAssistant/1.0',
+                    'Accept': 'application/json'
+                }
+            }
         );
 
-        if (!response.ok) {
-            // Try English Wikipedia
-            const enResponse = await fetch(
-                `https://en.wikipedia.org/api/rest_v1/page/summary/${encodedQuery}`
-            );
-            if (!enResponse.ok) return [];
-
-            const data = await enResponse.json();
-            if (data.extract) {
-                return [{
-                    title: data.title || cleanQuery,
-                    snippet: data.extract,
-                    url: data.content_urls?.desktop?.page || ''
-                }];
-            }
-            return [];
-        }
+        if (!response.ok) return [];
 
         const data = await response.json();
-        if (data.extract) {
+        if (data.extract && data.type !== 'disambiguation') {
+            console.log(`✅ Found Wikipedia (${lang}) article:`, data.title);
             return [{
-                title: data.title || cleanQuery,
+                title: data.title || query,
                 snippet: data.extract,
                 url: data.content_urls?.desktop?.page || ''
             }];
         }
-
         return [];
+    } catch {
+        return [];
+    }
+}
+
+async function searchWikipediaAPI(query: string): Promise<SearchResult[]> {
+    try {
+        const encodedQuery = encodeURIComponent(query);
+
+        // Use Wikipedia's search API
+        const response = await fetch(
+            `https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodedQuery}&format=json&origin=*&srlimit=3`,
+            {
+                headers: {
+                    'User-Agent': 'AIAssistant/1.0'
+                }
+            }
+        );
+
+        if (!response.ok) return [];
+
+        const data = await response.json();
+        const results: SearchResult[] = [];
+
+        if (data.query?.search) {
+            for (const item of data.query.search.slice(0, 3)) {
+                // Remove HTML tags from snippet
+                const cleanSnippet = item.snippet?.replace(/<[^>]*>/g, '') || '';
+                results.push({
+                    title: item.title,
+                    snippet: cleanSnippet,
+                    url: `https://en.wikipedia.org/wiki/${encodeURIComponent(item.title.replace(/ /g, '_'))}`
+                });
+            }
+            console.log(`✅ Wikipedia search found ${results.length} results`);
+        }
+
+        return results;
     } catch (error) {
-        console.error('Wikipedia search error:', error);
+        console.error('Wikipedia API search error:', error);
         return [];
     }
 }
@@ -112,25 +115,10 @@ async function searchWikipedia(query: string): Promise<SearchResult[]> {
 export async function searchWeb(query: string): Promise<SearchResult[]> {
     console.log('🔍 Starting web search for:', query);
 
-    // Check if it's a definition/person question - use Wikipedia
-    const isDefinitionQuery = /apa itu|siapa|what is|who is/i.test(query);
+    const results = await searchWikipedia(query);
 
-    if (isDefinitionQuery) {
-        console.log('📚 Using Wikipedia for definition query');
-        const wikiResults = await searchWikipedia(query);
-        if (wikiResults.length > 0) {
-            console.log('✅ Wikipedia found results');
-            return wikiResults;
-        }
-    }
-
-    // For other queries, try DuckDuckGo
-    console.log('🦆 Using DuckDuckGo search');
-    const ddgResults = await searchDuckDuckGo(query);
-
-    if (ddgResults.length > 0) {
-        console.log('✅ DuckDuckGo found', ddgResults.length, 'results');
-        return ddgResults;
+    if (results.length > 0) {
+        return results;
     }
 
     console.log('❌ No search results found');
@@ -166,7 +154,9 @@ export function shouldSearch(message: string): boolean {
         'cuaca',
         'weather',
         'jelaskan',
-        'explain'
+        'explain',
+        'presiden',
+        'president'
     ];
 
     const lowerMessage = message.toLowerCase();

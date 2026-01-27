@@ -1,7 +1,7 @@
 'use client';
 
 import { PersonalityMode } from '@/types';
-import { knowledgeBase } from '@/lib/knowledge-base';
+import { Settings, RefreshCw } from 'lucide-react';
 
 interface HeaderProps {
     mode: PersonalityMode;
@@ -9,53 +9,31 @@ interface HeaderProps {
 }
 
 export default function Header({ mode, onReset }: HeaderProps) {
-    const modeConfig = knowledgeBase.personality.modes[mode];
-
-    const modeColors: Record<PersonalityMode, string> = {
-        mentor: 'from-purple-500 to-indigo-600',
-        bestfriend: 'from-cyan-500 to-teal-600',
-        strict: 'from-orange-500 to-red-600',
-        chaos: 'from-pink-500 via-purple-500 to-cyan-500'
-    };
-
     return (
-        <header className="sticky top-0 z-40 bg-black/50 backdrop-blur-xl border-b border-white/10">
-            <div className="max-w-3xl mx-auto px-4 py-3 flex items-center justify-between">
-                {/* Logo & Title */}
-                <div className="flex items-center gap-3">
-                    <div className={`
-            w-10 h-10 rounded-xl bg-gradient-to-br ${modeColors[mode]}
-            flex items-center justify-center text-xl
-            transition-all duration-300
-          `}>
-                        🤖
-                    </div>
-                    <div>
-                        <h1 className="font-bold text-white text-lg">AI Assistant</h1>
-                        <div className="flex items-center gap-2 text-xs text-gray-400">
-                            <span className={`
-                px-2 py-0.5 rounded-full bg-gradient-to-r ${modeColors[mode]}
-                text-white font-medium
-              `}>
-                                {modeConfig.emoji} {mode}
-                            </span>
-                        </div>
-                    </div>
+        <header className="sticky top-0 z-40 bg-zinc-950/80 backdrop-blur-md border-b border-zinc-800/50">
+            <div className="max-w-3xl mx-auto px-4 h-14 flex items-center justify-between">
+                {/* Logo */}
+                <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full bg-zinc-100"></div>
+                    <h1 className="font-medium text-sm text-zinc-300 tracking-tight">AI Assistant</h1>
+                    <span className="text-zinc-600 text-xs px-2 py-0.5 rounded bg-zinc-900 border border-zinc-800">
+                        v1.0
+                    </span>
                 </div>
 
-                {/* Actions */}
-                <div className="flex items-center gap-2">
+                {/* Helper */}
+                <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-2 text-[10px] text-zinc-500 uppercase tracking-widest font-medium">
+                        <span className="w-1.5 h-1.5 rounded-full bg-green-500/50 animate-pulse"></span>
+                        {mode} Mode
+                    </div>
+
                     <button
                         onClick={onReset}
-                        className="p-2 rounded-lg hover:bg-white/10 text-gray-400 hover:text-white
-              transition-all duration-200"
-                        title="Reset Memory"
+                        className="text-zinc-500 hover:text-zinc-300 transition-colors"
+                        title="Reset Context"
                     >
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                                d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-                            />
-                        </svg>
+                        <RefreshCw size={14} />
                     </button>
                 </div>
             </div>

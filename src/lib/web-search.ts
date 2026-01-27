@@ -179,11 +179,11 @@ export function formatSearchResults(results: SearchResult[]): string {
         return '';
     }
 
-    let formatted = '\n\n📌 **Hasil Pencarian Web:**\n';
+    let formatted = '\n\n**Web Search Results:**\n';
     for (const result of results) {
-        formatted += `\n• **${result.title}**\n  ${result.snippet.slice(0, 300)}${result.snippet.length > 300 ? '...' : ''}\n`;
+        formatted += `\n**${result.title}**\n${result.snippet.slice(0, 300)}${result.snippet.length > 300 ? '...' : ''}\n`;
         if (result.url) {
-            formatted += `  🔗 ${result.url}\n`;
+            formatted += `Source: ${result.url}\n`;
         }
     }
 

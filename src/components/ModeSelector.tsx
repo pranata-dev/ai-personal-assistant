@@ -1,7 +1,7 @@
 'use client';
 
 import { PersonalityMode } from '@/types';
-import { knowledgeBase } from '@/lib/knowledge-base';
+import { Sparkles, Terminal, BookOpen, User, Zap } from 'lucide-react';
 
 interface ModeSelectorProps {
     currentMode: PersonalityMode;
@@ -11,62 +11,60 @@ interface ModeSelectorProps {
 }
 
 export default function ModeSelector({ currentMode, onModeChange, isOpen, onToggle }: ModeSelectorProps) {
-    const modes = Object.entries(knowledgeBase.personality.modes) as [PersonalityMode, typeof knowledgeBase.personality.modes.mentor][];
-    const currentModeConfig = knowledgeBase.personality.modes[currentMode];
-
-    const modeColors: Record<PersonalityMode, string> = {
-        mentor: 'from-purple-500 to-indigo-600',
-        bestfriend: 'from-cyan-500 to-teal-600',
-        strict: 'from-orange-500 to-red-600',
-        chaos: 'from-pink-500 via-purple-500 to-cyan-500'
-    };
+    const modes: { id: PersonalityMode; label: string; icon: any }[] = [
+        { id: 'mentor', label: 'Mentor', icon: BookOpen },
+        { id: 'bestfriend', label: 'Peer', icon: User },
+        { id: 'strict', label: 'Strict', icon: Terminal },
+        { id: 'chaos', label: 'Creative', icon: Sparkles },
+    ];
 
     return (
-        <div className="fixed bottom-24 right-4 z-50">
-            {/* Mode options (visible when open) */}
+        <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end">
+            {/* Mode List */}
             <div className={`
-        absolute bottom-full right-0 mb-2 transition-all duration-300
-        ${isOpen ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4 pointer-events-none'}
+        mb-3 transition-all duration-200 origin-bottom-right
+        ${isOpen ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-95 translate-y-2 pointer-events-none'}
       `}>
-                <div className="bg-black/80 backdrop-blur-xl rounded-2xl border border-white/10 p-2 shadow-xl">
-                    {modes.map(([mode, config]) => (
-                        <button
-                            key={mode}
-                            onClick={() => {
-                                onModeChange(mode);
-                                onToggle();
-                            }}
-                            className={`
-                w-full flex items-center gap-3 px-4 py-3 rounded-xl
-                transition-all duration-200 text-left
-                ${currentMode === mode
-                                    ? `bg-gradient-to-r ${modeColors[mode]} text-white`
-                                    : 'hover:bg-white/10 text-gray-300'
-                                }
-              `}
-                        >
-                            <span className="text-xl">{config.emoji}</span>
-                            <div>
-                                <div className="font-medium capitalize">{mode}</div>
-                                <div className="text-xs opacity-70">{config.tone}</div>
-                            </div>
-                        </button>
-                    ))}
+                <div className="bg-zinc-900 border border-zinc-800 rounded-lg shadow-2xl p-1 min-w-[160px]">
+                    {modes.map((mode) => {
+                        const Icon = mode.icon;
+                        const isActive = currentMode === mode.id;
+                        return (
+                            <button
+                                key={mode.id}
+                                onClick={() => {
+                                    onModeChange(mode.id);
+                                    onToggle();
+                                }}
+                                className={`
+                  w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm
+                  transition-colors duration-200
+                  ${isActive
+                                        ? 'bg-zinc-800 text-zinc-100 font-medium'
+                                        : 'text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-200'
+                                    }
+                `}
+                            >
+                                <Icon size={14} className={isActive ? 'text-zinc-100' : 'text-zinc-500'} />
+                                {mode.label}
+                            </button>
+                        );
+                    })}
                 </div>
             </div>
 
-            {/* Toggle button */}
+            {/* Toggle Button */}
             <button
                 onClick={onToggle}
                 className={`
-          w-14 h-14 rounded-full shadow-lg
-          bg-gradient-to-r ${modeColors[currentMode]}
-          flex items-center justify-center text-2xl
-          transition-all duration-300 hover:scale-110
-          ${isOpen ? 'rotate-180' : ''}
+          h-10 px-4 rounded-full shadow-lg border border-zinc-800
+          flex items-center gap-2 text-xs font-medium uppercase tracking-wider
+          transition-all duration-200 hover:border-zinc-700
+          ${isOpen ? 'bg-zinc-100 text-zinc-900' : 'bg-zinc-900 text-zinc-400 hover:text-zinc-200'}
         `}
             >
-                {currentModeConfig.emoji}
+                <Zap size={14} className={isOpen ? 'text-zinc-900' : 'text-zinc-500'} />
+                <span>{isOpen ? 'Close' : 'Mode'}</span>
             </button>
         </div>
     );

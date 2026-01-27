@@ -1,7 +1,7 @@
 'use client';
 
 import { Message, PersonalityMode } from '@/types';
-import { getModeEmoji } from '@/lib/ai-engine';
+import { Bot, User } from 'lucide-react';
 
 interface MessageBubbleProps {
     message: Message;
@@ -10,17 +10,15 @@ interface MessageBubbleProps {
 
 export default function MessageBubble({ message, mode }: MessageBubbleProps) {
     const isUser = message.role === 'user';
-    const emoji = getModeEmoji(mode);
 
     const formatContent = (content: string) => {
-        // Simple markdown-like formatting
         return content
             .split('\n')
             .map((line, i) => {
                 // Bold text
-                line = line.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+                line = line.replace(/\*\*(.*?)\*\*/g, '<span class="font-semibold text-white">$1</span>');
                 // Inline code
-                line = line.replace(/`([^`]+)`/g, '<code class="bg-white/10 px-1.5 py-0.5 rounded text-sm">$1</code>');
+                line = line.replace(/`([^`]+)`/g, '<code class="bg-zinc-800 px-1.5 py-0.5 rounded text-sm text-zinc-300 border border-zinc-700">$1</code>');
                 // Bullet points
                 if (line.startsWith('- ')) {
                     line = `<span class="flex gap-2"><span>•</span><span>${line.slice(2)}</span></span>`;
@@ -31,50 +29,43 @@ export default function MessageBubble({ message, mode }: MessageBubbleProps) {
     };
 
     return (
-        <div className={`flex gap-3 ${isUser ? 'flex-row-reverse' : 'flex-row'} animate-fade-in`}>
-            {/* Avatar */}
-            <div className={`
-        flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-sm
-        ${isUser
-                    ? 'bg-gradient-to-br from-blue-500 to-purple-600'
-                    : `bg-gradient-to-br ${getModeGradient(mode)}`
-                }
-      `}>
-                {isUser ? '👤' : emoji}
-            </div>
+        <div className={`flex gap-4 max-w-3xl mx-auto w-full ${isUser ? 'justify-end' : 'justify-start'} animate-fade-in group`}>
+            {/* Bot Icon */}
+            {!isUser && (
+                <div className="flex-shrink-0 w-8 h-8 rounded-lg bg-zinc-900 border border-zinc-800 flex items-center justify-center text-zinc-400 mt-1">
+                    <Bot size={16} />
+                </div>
+            )}
 
-            {/* Message bubble */}
+            {/* Message Content */}
             <div className={`
-        max-w-[80%] rounded-2xl px-4 py-3
+        max-w-[85%] rounded-lg px-4 py-3
         ${isUser
-                    ? 'bg-gradient-to-br from-blue-600 to-purple-600 text-white'
-                    : 'bg-white/10 backdrop-blur-sm border border-white/10 text-gray-100'
+                    ? 'bg-zinc-100/10 text-zinc-100 border border-zinc-800'
+                    : 'bg-transparent text-zinc-300 pl-0'
                 }
       `}>
                 <div
-                    className="text-sm leading-relaxed"
+                    className="text-sm leading-7"
                     dangerouslySetInnerHTML={{ __html: formatContent(message.content) }}
                 />
-                <div className={`text-xs mt-2 ${isUser ? 'text-white/60' : 'text-gray-400'}`}>
+                <div className={`text-[10px] mt-2 opacity-0 group-hover:opacity-100 transition-opacity ${isUser ? 'text-zinc-500 text-right' : 'text-zinc-600'}`}>
                     {formatTime(message.timestamp)}
                 </div>
             </div>
+
+            {/* User Icon */}
+            {isUser && (
+                <div className="flex-shrink-0 w-8 h-8 rounded-lg bg-zinc-800 border border-zinc-700 flex items-center justify-center text-zinc-400 mt-1">
+                    <User size={16} />
+                </div>
+            )}
         </div>
     );
 }
 
-function getModeGradient(mode: PersonalityMode): string {
-    const gradients: Record<PersonalityMode, string> = {
-        mentor: 'from-purple-500 to-indigo-600',
-        bestfriend: 'from-cyan-500 to-teal-600',
-        strict: 'from-orange-500 to-red-600',
-        chaos: 'from-pink-500 via-purple-500 to-cyan-500'
-    };
-    return gradients[mode];
-}
-
 function formatTime(timestamp: number): string {
-    return new Date(timestamp).toLocaleTimeString('id-ID', {
+    return new Date(timestamp).toLocaleTimeString('en-US', {
         hour: '2-digit',
         minute: '2-digit'
     });

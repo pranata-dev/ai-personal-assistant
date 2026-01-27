@@ -2,6 +2,13 @@
 
 :root {
   --font-inter: 'Inter', system-ui, sans-serif;
+  --background: #09090b;
+  --foreground: #fafafa;
+  --accent: #27272a;
+  --accent-foreground: #fafafa;
+  --primary: #fafafa;
+  --primary-foreground: #18181b;
+  --border: #27272a;
 }
 
 * {
@@ -14,18 +21,19 @@ html {
 
 body {
   font-family: var(--font-inter);
-  background: linear-gradient(135deg, #0f0f1a 0%, #1a1025 50%, #0f0f1a 100%);
+  background: var(--background);
+  color: var(--foreground);
   min-height: 100vh;
 }
 
-/* Custom scrollbar */
+/* Elegant Scrollbar */
 .scrollbar-thin {
   scrollbar-width: thin;
-  scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
+  scrollbar-color: #3f3f46 transparent;
 }
 
 .scrollbar-thin::-webkit-scrollbar {
-  width: 6px;
+  width: 4px;
 }
 
 .scrollbar-thin::-webkit-scrollbar-track {
@@ -33,12 +41,12 @@ body {
 }
 
 .scrollbar-thin::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 3px;
+  background: #3f3f46;
+  border-radius: 2px;
 }
 
 .scrollbar-thin::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.2);
+  background: #52525b;
 }
 
 .scrollbar-hide {
@@ -50,90 +58,54 @@ body {
   display: none;
 }
 
-/* Animations */
+/* Subtle Animations */
 @keyframes fade-in {
   from {
     opacity: 0;
-    transform: translateY(10px);
+    transform: translateY(5px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
   }
 }
 
-@keyframes bounce-slow {
-  0%, 100% {
-    transform: translateY(0);
-  }
-  50% {
-    transform: translateY(-10px);
-  }
-}
-
-@keyframes pulse-glow {
-  0%, 100% {
-    box-shadow: 0 0 20px rgba(168, 85, 247, 0.3);
-  }
-  50% {
-    box-shadow: 0 0 40px rgba(168, 85, 247, 0.6);
-  }
-}
-
 .animate-fade-in {
-  animation: fade-in 0.3s ease-out;
+  animation: fade-in 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.animate-bounce-slow {
-  animation: bounce-slow 2s ease-in-out infinite;
-}
-
-.animate-pulse-glow {
-  animation: pulse-glow 2s ease-in-out infinite;
-}
-
-/* Glassmorphism utility */
+/* Glass / Blur Utilities */
 .glass {
-  background: rgba(255, 255, 255, 0.05);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(9, 9, 11, 0.7);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border);
 }
 
-/* Mode-specific gradients */
-.mode-mentor {
-  --gradient-from: #8b5cf6;
-  --gradient-to: #4f46e5;
+/* Typography refinement */
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  letter-spacing: -0.025em;
 }
 
-.mode-bestfriend {
-  --gradient-from: #06b6d4;
-  --gradient-to: #14b8a6;
-}
-
-.mode-strict {
-  --gradient-from: #f97316;
-  --gradient-to: #ef4444;
-}
-
-.mode-chaos {
-  --gradient-from: #ec4899;
-  --gradient-via: #8b5cf6;
-  --gradient-to: #06b6d4;
-}
-
-/* Focus styles */
+/* Professional Focus States */
 *:focus-visible {
-  outline: 2px solid rgba(168, 85, 247, 0.5);
+  outline: 2px solid #52525b;
   outline-offset: 2px;
 }
 
 /* Selection */
 ::selection {
-  background: rgba(168, 85, 247, 0.3);
-  color: white;
+  background: #27272a;
+  color: #fafafa;
 }
 
-/* Code blocks in messages */
+/* Markdown Styling */
 code {
   font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  font-size: 0.875rem;
 }

@@ -182,7 +182,7 @@ export default function Sidebar({
                 </button>
                 {isOpen && (
                     <div className="px-3 py-2 text-xs text-zinc-400 dark:text-zinc-600 mt-1 flex justify-between">
-                        <span>v1.5 Toggle</span>
+                        <span>Built by <span className="italic">LumoraLabs</span></span>
                         <span className="w-2 h-2 rounded-full bg-green-500/20 border border-green-500/50"></span>
                     </div>
                 )}

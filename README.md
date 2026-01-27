@@ -1,99 +1,90 @@
-# Intelligent Personal Workspace
+# Lumora AI Workspace
 
-> A desktop-first cognitive interface designed for productivity, built with **Next.js 15** and **Llama 3.3**.
+> A sophisticated cognitive interface for the modern professional. Built by **Pranata** & **LumoraLabs**.
 
-![License](https://img.shields.io/badge/license-MIT-blue.svg)
-![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue)
-![Next.js](https://img.shields.io/badge/Next.js-15.0-black)
-![Tailwind](https://img.shields.io/badge/Tailwind-4.0-38bdf8)
+[![Next.js](https://img.shields.io/badge/Next.js-15.0-black?style=flat-square&logo=next.js)](https://nextjs.org/)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-v4.0-38bdf8?style=flat-square&logo=tailwind-css)](https://tailwindcss.com/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue?style=flat-square&logo=typescript)](https://www.typescriptlang.org/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square)](https://opensource.org/licenses/MIT)
 
-This project reimagines the chat interface as a **professional workspace**. Moving away from mobile-first designs, it offers a high-density, 3-column layout optimized for desktop productivity. It integrates context-aware memory, real-time web search (Wikipedia/Web), and adaptive personality modes into a seamless, distraction-free environment.
-
----
-
-## Key Features
-
-### Desktop-First Architecture
-Designed for screens ≥1280px.
-- **Three-Column Layout**: Persistent navigation, focused workspace, and always-visible live context.
-- **Sticky Productivity Bar**: A "Slack-style" input interface supporting multiline drafting and quick actions.
-- **Visual Hierarchy**: Minimalist Zinc/Slate dark theme optimized for long sessions.
-
-### Adaptive Cognition
-The system adapts its persona and capabilities based on user intent.
-- **Mentor Mode**: Structured, educational guidance for complex topics.
-- **Peer Mode**: Collaborative, direct problem-solving.
-- **Strict Mode**: High-efficiency, concise technical answers.
-- **Creative Mode**: Lateral thinking partner for brainstorming.
-
-### Integrated Intelligence
-- **Active Context**: Maintains session-based conversation history (Stateless).
-- **Autonomous Search**: Automatically detects when to query external sources (Wikipedia, Web) for real-time fact-checking.
-- **Smart Formatting**: Auto-formats code blocks, lists, and markdown for maximum readability.
+**Lumora AI Workspace** is an elegant, desktop-first environment designed to streamline human-AI collaboration. It moves beyond the limitations of standard chat interfaces, offering a high-density, distraction-free workspace tailored for deep work, research, and creative brainstorming.
 
 ---
 
-## Technical Stack
+## 🎨 Design Philosophy
 
-Built with a focus on performance, type safety, and modern React patterns.
+We believe that professional tools should be quiet, yet powerful. The workspace is built on a custom design system that prioritizes long-form productivity:
 
-- **Frontend**: Next.js 15 (App Router), React 19, TypeScript
-- **Styling**: Tailwind CSS v4, Lucide React (Icons)
-- **AI Engine**: OpenRouter API (Llama 3.3 70B Instruct)
-- **State Management**: React Hooks (Ephemeral Session State)
-- **Deployment**: Vercel-ready (Edge Runtime compatible)
+- **Calmed Palette**: Utilizing "Bone White" for light mode and "Soft Dark" for dark mode to reduce ocular strain.
+- **Subtle Precision**: Standardized ultra-dark borders (`zinc-900`) that provide structure without visual noise.
+- **Glassmorphism**: Subtle backdrop blurs and transitions that create a sense of depth and focus.
 
 ---
 
-## Getting Started
+## 🧠 Core Intelligence
+
+The workspace is powered by modern LLMs and adaptive cognition modes:
+
+- **Adaptive Personality Modes**: Switching between **Mentor**, **Peer**, **Strict**, and **Creative** states to align the AI's output with your specific task.
+- **Multi-Model Support**: Seamlessly toggle between industry-leading models including Llama 3.3, Gemini 2.0 Flash, Qwen 2.5, and Mistral.
+- **Stateless Privacy**: Built with a "stateless" philosophy—your conversation history is transient, ensuring maximum privacy for sensitive work.
+
+---
+
+## ✨ Key Features
+
+- **Desktop-First Architecture**: Optimized for wide screens with a 3-column layout (Navigation, Chat, Context).
+- **Multimodal Input**: Support for text drafting, **Speech-to-Text** (Voice Input), and direct file uploads (`.txt`, `.md`).
+- **Interactive Branding**: Subtle "Built by LumoraLabs" identity that reflects a commitment to quality engineering.
+- **Bilingual Interface**: Native support for English (US) and Bahasa Indonesia (ID) with an instant language toggle.
+
+---
+
+## 🛠️ Technical Implementation
+
+Built with a modern, type-safe stack:
+
+- **Core**: Next.js 15 (App Router) & React 19
+- **Style**: Tailwind CSS v4 (Class-based theming)
+- **Icons**: Lucide React
+- **Integration**: OpenRouter API for intelligent model routing
+- **Theme**: `next-themes` with hydration-safe context
+
+---
+
+## 🚀 Getting Started
 
 ### Prerequisites
 - Node.js 18+
-- An API Key from [OpenRouter](https://openrouter.ai/) (Free tier available)
+- An API Key from [OpenRouter](https://openrouter.ai/)
 
-### Installation
+### Setup
 
-1. **Clone the repository**
+1. **Clone & Install**
    ```bash
-   git clone https://github.com/pranata-dev/personal-assistant-ai.git
-   cd personal-assistant-ai
-   ```
-
-2. **Install dependencies**
-   ```bash
+   git clone https://github.com/pranata-dev/ai-assistant.git
+   cd ai-assistant
    npm install
    ```
 
-3. **Configure Environment**
-   Create a `.env.local` file in the root directory:
+2. **Environment Configuration**
+   Create a `.env.local` file:
    ```env
-   OPENROUTER_API_KEY=sk-or-v1-your-key-here
-   OPENROUTER_MODEL=meta-llama/llama-3.3-70b-instruct:free
+   OPENROUTER_API_KEY=your_key_here
    ```
 
-4. **Launch Development Server**
+3. **Development**
    ```bash
    npm run dev
    ```
-   Access the workspace at `http://localhost:3000`.
+   Open [http://localhost:3000](http://localhost:3000) to enter the workspace.
 
 ---
 
-## Design Philosophy
+## 📄 License
 
-**"Tools should be quiet."**
-
-Most AI interfaces are cluttered with suggestions and mobile-centric constraints. This project prioritizes:
-1. **Density**: Information density appropriate for desktop use.
-2. **Clarity**: High contrast, strict typography (Inter), and clear separation of concerns.
-3. **Speed**: Keyboard-first interactions and instant intent recognition.
+Distributed under the MIT License. See `LICENSE` for more information.
 
 ---
 
-## License
-
-This project is open source and available under the [MIT License](LICENSE).
-
----
-
-*Built by [Pranata](https://github.com/pranata-dev).*
+*Crafted with passion by **Pranata** & **LumoraLabs**.*

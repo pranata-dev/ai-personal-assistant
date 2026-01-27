@@ -10,7 +10,7 @@ interface SearchResult {
 async function searchWikipedia(query: string): Promise<SearchResult[]> {
     try {
         // Clean query
-        const cleanQuery = query
+        let cleanQuery = query
             .replace(/apa itu\s*/gi, '')
             .replace(/siapa\s*(itu)?\s*/gi, '')
             .replace(/what is\s*/gi, '')
@@ -24,6 +24,11 @@ async function searchWikipedia(query: string): Promise<SearchResult[]> {
             .trim();
 
         if (!cleanQuery) return [];
+
+        // Specific fix for "siapa presiden"
+        if (cleanQuery.toLowerCase().includes('presiden') && !cleanQuery.toLowerCase().includes('indonesia')) {
+            cleanQuery += ' indonesia';
+        }
 
         console.log('📚 Wikipedia search for:', cleanQuery);
 

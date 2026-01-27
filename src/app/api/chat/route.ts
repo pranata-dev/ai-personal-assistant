@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { PersonalityMode, Message } from '@/types';
 import { getSystemPrompt, formatConversationHistory } from '@/lib/ai-engine';
+import { searchWeb, shouldSearch, formatSearchResults } from '@/lib/web-search';
 
 const OPENROUTER_API_URL = 'https://openrouter.ai/api/v1/chat/completions';
 
@@ -57,12 +58,23 @@ export async function POST(request: Request) {
             );
         }
 
+        // Check if we should search the web for this query
+        let searchContext = '';
+        if (shouldSearch(message)) {
+            console.log('🔍 Searching web for:', message);
+            const searchResults = await searchWeb(message);
+            if (searchResults.length > 0) {
+                searchContext = `\n\nINFORMASI DARI WEB SEARCH (gunakan ini untuk menjawab):\n${searchResults.map(r => `- ${r.title}: ${r.snippet}`).join('\n')}`;
+                console.log('📌 Found', searchResults.length, 'search results');
+            }
+        }
+
         const systemPrompt = getSystemPrompt(mode);
         const conversationHistory = formatConversationHistory(history);
 
         // Build messages array for OpenRouter
         const messages = [
-            { role: 'system', content: systemPrompt },
+            { role: 'system', content: systemPrompt + searchContext },
         ];
 
         // Add conversation history as context

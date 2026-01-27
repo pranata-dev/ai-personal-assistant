@@ -20,6 +20,7 @@ export default function Home() {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [theme, setTheme] = useState<'dark' | 'light'>('dark');
   const [spokenLanguage, setSpokenLanguage] = useState<'id-ID' | 'en-US' | 'auto'>('auto');
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
   // Load memory on mount - NO LocalStorage
   useEffect(() => {
@@ -184,10 +185,12 @@ export default function Home() {
         currentMode={currentMode}
         currentModelId={currentModelId}
         language={currentLanguage}
+        isOpen={isSidebarOpen}
         onModeChange={handleModeChange}
         onModelChange={handleModelChange}
         onReset={handleReset}
         onOpenSettings={() => setIsSettingsOpen(true)}
+        onToggle={() => setIsSidebarOpen(!isSidebarOpen)}
       />
 
       {/* 2. Main Chat Area */}

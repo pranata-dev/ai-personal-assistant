@@ -11,6 +11,7 @@ import RightPanel from '@/components/Workspace/RightPanel';
 import MainArea from '@/components/Workspace/MainArea';
 import SettingsModal from '@/components/SettingsModal';
 import { Language } from '@/lib/i18n';
+import Header from '@/components/Header';
 
 export default function Home() {
   const [memory, setMemory] = useState<Memory | null>(null);
@@ -191,14 +192,17 @@ export default function Home() {
 
       {/* 2. Main Chat Area */}
       <MainArea>
-        <ChatContainer
-          messages={messages}
-          mode={currentMode}
-          isLoading={isLoading}
-          onSend={handleSend}
-          spokenLanguage={spokenLanguage}
-          language={currentLanguage}
-        />
+        <Header mode={currentMode} onReset={handleReset} />
+        <div className="flex-1 min-h-0 relative">
+          <ChatContainer
+            messages={messages}
+            mode={currentMode}
+            isLoading={isLoading}
+            onSend={handleSend}
+            spokenLanguage={spokenLanguage}
+            language={currentLanguage}
+          />
+        </div>
         {/* Transparent wrapper/overlay for modals if needed */}
       </MainArea>
 

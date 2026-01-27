@@ -27,7 +27,7 @@ The system adapts its persona and capabilities based on user intent.
 - **Creative Mode**: Lateral thinking partner for brainstorming.
 
 ### Integrated Intelligence
-- **Active Context**: Persists conversation history and user preferences via local storage.
+- **Active Context**: Maintains session-based conversation history (Stateless).
 - **Autonomous Search**: Automatically detects when to query external sources (Wikipedia, Web) for real-time fact-checking.
 - **Smart Formatting**: Auto-formats code blocks, lists, and markdown for maximum readability.
 
@@ -40,7 +40,7 @@ Built with a focus on performance, type safety, and modern React patterns.
 - **Frontend**: Next.js 15 (App Router), React 19, TypeScript
 - **Styling**: Tailwind CSS v4, Lucide React (Icons)
 - **AI Engine**: OpenRouter API (Llama 3.3 70B Instruct)
-- **State Management**: React Hooks + LocalStorage (Soft Persistence)
+- **State Management**: React Hooks (Ephemeral Session State)
 - **Deployment**: Vercel-ready (Edge Runtime compatible)
 
 ---

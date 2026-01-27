@@ -85,7 +85,7 @@ export default function Sidebar({
 
             {/* Model Selector */}
             {isOpen && (
-                <div className="px-2 mt-2 sticky">
+                <div className="px-2 mt-2 relative z-30">
                     <div className="px-2 text-[10px] font-medium text-zinc-500 uppercase tracking-widest mb-1.5">
                         {t('aiModel', language)}
                     </div>
@@ -103,7 +103,7 @@ export default function Sidebar({
 
                         {/* Dropdown */}
                         {isModelMenuOpen && (
-                            <div className="absolute top-full left-0 w-full mt-1 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-900 rounded-md shadow-xl py-1 z-30 overflow-hidden">
+                            <div className="absolute top-full left-0 w-full mt-1 bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-md shadow-2xl py-1 z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-100">
                                 {AVAILABLE_MODELS.map(model => (
                                     <button
                                         key={model.id}

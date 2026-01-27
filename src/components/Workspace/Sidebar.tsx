@@ -117,7 +117,10 @@ export default function Sidebar({ currentMode, currentModelId, onModeChange, onM
 
             {/* Bottom Actions */}
             <div className="p-2 border-t border-zinc-900">
-                <button className="w-full flex items-center gap-3 px-3 py-2 rounded-md text-zinc-500 hover:text-zinc-300 hover:bg-zinc-900 text-sm transition-colors">
+                <button
+                    onClick={() => alert("Settings: Privacy Mode Active.\n\nNo persistent configuration is stored in this stateless session.")}
+                    className="w-full flex items-center gap-3 px-3 py-2 rounded-md text-zinc-500 hover:text-zinc-300 hover:bg-zinc-900 text-sm transition-colors"
+                >
                     <Settings size={16} />
                     Settings
                 </button>

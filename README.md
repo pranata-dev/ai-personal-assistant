@@ -11,29 +11,29 @@ This project reimagines the chat interface as a **professional workspace**. Movi
 
 ---
 
-## ⚡ Key Features
+## Key Features
 
-### 🖥️ Desktop-First Architecture
+### Desktop-First Architecture
 Designed for screens ≥1280px.
 - **Three-Column Layout**: Persistent navigation, focused workspace, and always-visible live context.
 - **Sticky Productivity Bar**: A "Slack-style" input interface supporting multiline drafting and quick actions.
 - **Visual Hierarchy**: Minimalist Zinc/Slate dark theme optimized for long sessions.
 
-### 🧠 Adaptive Cognition
+### Adaptive Cognition
 The system adapts its persona and capabilities based on user intent.
 - **Mentor Mode**: Structured, educational guidance for complex topics.
 - **Peer Mode**: Collaborative, direct problem-solving.
 - **Strict Mode**: High-efficiency, concise technical answers.
 - **Creative Mode**: Lateral thinking partner for brainstorming.
 
-### 🔍 Integrated Intelligence
+### Integrated Intelligence
 - **Active Context**: Persists conversation history and user preferences via local storage.
 - **Autonomous Search**: Automatically detects when to query external sources (Wikipedia, Web) for real-time fact-checking.
 - **Smart Formatting**: Auto-formats code blocks, lists, and markdown for maximum readability.
 
 ---
 
-## 🛠️ Technical Stack
+## Technical Stack
 
 Built with a focus on performance, type safety, and modern React patterns.
 
@@ -45,7 +45,7 @@ Built with a focus on performance, type safety, and modern React patterns.
 
 ---
 
-## 🚀 Getting Started
+## Getting Started
 
 ### Prerequisites
 - Node.js 18+
@@ -79,7 +79,7 @@ Built with a focus on performance, type safety, and modern React patterns.
 
 ---
 
-## 🎨 Design Philosophy
+## Design Philosophy
 
 **"Tools should be quiet."**
 
@@ -90,7 +90,7 @@ Most AI interfaces are cluttered with suggestions and mobile-centric constraints
 
 ---
 
-## 📄 License
+## License
 
 This project is open source and available under the [MIT License](LICENSE).
 

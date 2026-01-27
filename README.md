@@ -14,7 +14,7 @@ Asisten AI personal yang fun, smart, dan helpful - bukan chatbot generik!
 
 - **Next.js 15** + App Router
 - **Tailwind CSS v4**
-- **Google Gemini API** (free tier)
+- **OpenRouter API** (free tier available)
 - **TypeScript**
 
 ## Setup
@@ -24,12 +24,12 @@ Asisten AI personal yang fun, smart, dan helpful - bukan chatbot generik!
    npm install
    ```
 
-2. Create `.env.local` with your Gemini API key:
+2. Create `.env.local` with your OpenRouter API key:
    ```
-   GEMINI_API_KEY=your_api_key_here
+   OPENROUTER_API_KEY=your_api_key_here
    ```
    
-   Get free API key at: https://aistudio.google.com/
+   Get free API key at: https://openrouter.ai/keys
 
 3. Run development server:
    ```bash

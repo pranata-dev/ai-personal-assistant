@@ -1,7 +1,8 @@
 'use client';
 
 import { PersonalityMode } from '@/types';
-import { Settings, RefreshCw } from 'lucide-react';
+import { ThemeToggle } from '@/components/ThemeToggle';
+import { RefreshCw } from 'lucide-react';
 
 interface HeaderProps {
     mode: PersonalityMode;
@@ -27,6 +28,10 @@ export default function Header({ mode, onReset }: HeaderProps) {
                         <span className="w-1.5 h-1.5 rounded-full bg-green-500/50 animate-pulse"></span>
                         {mode} Mode
                     </div>
+
+                    <div className="h-4 w-px bg-zinc-800/50" />
+                    <ThemeToggle />
+                    <div className="h-4 w-px bg-zinc-800/50" />
 
                     <button
                         onClick={onReset}

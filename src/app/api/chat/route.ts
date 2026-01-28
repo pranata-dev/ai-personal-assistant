@@ -132,6 +132,8 @@ export async function POST(request: Request) {
             errorMessage = "All AI models are currently unavailable due to quota limits. Please try again in 15 minutes.";
         } else if (lastError?.message?.includes('quota exceeded') || lastError?.message?.includes('AI service quota exceeded')) {
             errorMessage = "AI service quota exceeded. Please try again later or check API limits.";
+        } else if (lastError?.message?.toLowerCase().includes('rate limit')) {
+            errorMessage = "AI service is currently busy (Rate Limit). Please try again in a few seconds.";
         } else if (lastError) {
             errorMessage = `All models unavailable: ${lastError.message}`;
         }
@@ -200,7 +202,13 @@ async function callOpenRouter(
             // Handle rate limiting (Retryable)
             if (response.status === 429) {
                 lastMsg = `Rate limit exceeded (429) on ${model}`;
-                const delay = Math.pow(2, attempt) * 1000;
+
+                // Fail faster on rate limits to allow switching to other models
+                if (attempt > 1) {
+                    throw new Error(`Rate limit exceeded (429) on ${model}`);
+                }
+
+                const delay = 1000; // Fixed 1s delay for rate limit
                 console.warn(`⚠️ Rate limit hit for ${model}. Retrying in ${delay}ms...`);
                 await new Promise(resolve => setTimeout(resolve, delay));
                 continue;

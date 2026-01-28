@@ -107,7 +107,25 @@ export function isModelBlocked(id: string): boolean {
   return true;
 }
 
-// Backward compatibility (deprecated, use getModelPool)
-export const AVAILABLE_MODELS = getModelPool();
-export const DEFAULT_MODEL_ID = AVAILABLE_MODELS[0]?.id || 'z-ai/glm-4.5-air:free';
-export const FALLBACK_MODEL_IDS = AVAILABLE_MODELS.slice(1).map(m => m.id);
+// Backward compatibility and helpers
+export const AVAILABLE_MODELS = getModelPool(); // This might need to be dynamic if called repeatedly, but constant is fine for UI
+export const DEFAULT_MODEL_ID = 'z-ai/glm-4.5-air:free';
+export const FALLBACK_MODEL_IDS = getModelPool().slice(1).map(m => m.id);
+
+export function getModelById(id: string): Model | undefined {
+  return getModelPool().find(m => m.id === id);
+}
+
+export function getPrimaryModel(): Model {
+  return getModelPool()[0] || {
+    id: DEFAULT_MODEL_ID,
+    name: 'GLM 4.5 Air',
+    role: 'primary',
+    description: 'Primary AI model',
+    isFree: true
+  };
+}
+
+export function getFallbackModels(): Model[] {
+  return getModelPool().slice(1);
+}

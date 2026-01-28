@@ -199,6 +199,7 @@ async function callOpenRouter(
 
             // Handle rate limiting (Retryable)
             if (response.status === 429) {
+                lastMsg = `Rate limit exceeded (429) on ${model}`;
                 const delay = Math.pow(2, attempt) * 1000;
                 console.warn(`⚠️ Rate limit hit for ${model}. Retrying in ${delay}ms...`);
                 await new Promise(resolve => setTimeout(resolve, delay));

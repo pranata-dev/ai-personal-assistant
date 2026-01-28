@@ -21,9 +21,10 @@ const BLOCK_DURATION_MS = 10000; // 10 seconds (Reduced for transient free tier 
 
 // Base metadata for known models (used to populate descriptions)
 const MODEL_METADATA: Record<string, Partial<Model>> = {
-  'google/gemini-2.0-flash-lite-preview-02-05:free': { name: 'Gemini 2.0 Flash Lite', description: 'Primary AI model - Fastest.' },
+  'z-ai/glm-4.5-air:free': { name: 'GLM 4.5 Air', description: 'Primary - High Speed & Agentic' },
+  'google/gemini-2.0-flash-lite-preview-02-05:free': { name: 'Gemini 2.0 Flash Lite', description: 'Fallback 1 - Fastest.' },
+  'meta-llama/llama-3.3-70b-instruct:free': { name: 'Llama 3.3 70B', description: 'Fallback 2 - Smartest.' },
   'google/gemini-2.0-pro-exp-02-05:free': { name: 'Gemini 2.0 Pro', description: 'Fallback model - High Quality Reasoning.' },
-  'meta-llama/llama-3.3-70b-instruct:free': { name: 'Llama 3.3 70B', description: 'Fallback model - Smartest.' },
   'deepseek/deepseek-r1-distill-llama-70b:free': { name: 'DeepSeek R1', description: 'Fallback model - Reasoning.' },
   'qwen/qwen-2.5-72b-instruct:free': { name: 'Qwen 2.5 72B', description: 'Fallback model - Alternative.' },
   'liquid/lfm-40b:free': { name: 'Liquid LFM 40B', description: 'Fallback model - Generalist.' },
@@ -44,9 +45,10 @@ export function getModelPool(): Model[] {
 
   // Default list if env is empty (Prioritize FREE models)
   const modelIds = rawList.length > 0 ? rawList : [
+    'z-ai/glm-4.5-air:free',
     'google/gemini-2.0-flash-lite-preview-02-05:free',
-    'google/gemini-2.0-pro-exp-02-05:free',
     'meta-llama/llama-3.3-70b-instruct:free',
+    'google/gemini-2.0-pro-exp-02-05:free',
     'deepseek/deepseek-r1-distill-llama-70b:free',
     'qwen/qwen-2.5-72b-instruct:free',
     'liquid/lfm-40b:free',
@@ -117,7 +119,7 @@ export function isModelBlocked(id: string): boolean {
 
 // Backward compatibility and helpers
 export const AVAILABLE_MODELS = getModelPool();
-export const DEFAULT_MODEL_ID = getModelPool()[0]?.id || 'google/gemini-2.0-flash-lite-preview-02-05:free';
+export const DEFAULT_MODEL_ID = getModelPool()[0]?.id || 'z-ai/glm-4.5-air:free';
 export const FALLBACK_MODEL_IDS = getModelPool().slice(1).map(m => m.id);
 
 export function getModelById(id: string): Model | undefined {
@@ -127,7 +129,7 @@ export function getModelById(id: string): Model | undefined {
 export function getPrimaryModel(): Model {
   return getModelPool()[0] || {
     id: DEFAULT_MODEL_ID,
-    name: 'Gemini 2.0 Flash Lite',
+    name: 'GLM 4.5 Air',
     role: 'primary',
     description: 'Primary AI model',
     isFree: true

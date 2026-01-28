@@ -111,7 +111,9 @@ If ANY verification fails, ask a focused clarifying question BEFORE proceeding w
 Do NOT output your verification process - only output the final response or clarifying question.`;
 
 export function getSystemPrompt(mode: PersonalityMode, operatingMode: OperatingMode = 'assistant'): string {
-    const modeConfig = knowledgeBase.personality.modes[mode];
+    const validModes = knowledgeBase.personality.modes;
+    // Fallback to 'mentor' if mode is invalid or undefined
+    const modeConfig = validModes[mode as keyof typeof validModes] || validModes['mentor'];
     const userContext = getUserContext();
 
     const now = new Date();

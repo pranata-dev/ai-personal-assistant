@@ -35,7 +35,12 @@ const MODEL_METADATA: Record<string, Partial<Model>> = {
  * Get the prioritized list of models to try
  */
 export function getModelPool(): Model[] {
-  const rawList = (process.env.OPENROUTER_MODELS || '').split(',').map(s => s.trim()).filter(Boolean);
+  const envVar = process.env.OPENROUTER_MODELS;
+  const rawList = (envVar || '').split(',').map(s => s.trim()).filter(Boolean);
+
+  if (rawList.length > 0) {
+    console.log(`📡 Models loaded from Environment Variable: [${rawList.join(', ')}]`);
+  }
 
   // Valid list of currently available FREE endpoints
   const modelIds = rawList.length > 0 ? rawList : [
@@ -87,6 +92,22 @@ export function reportModelFailure(id: string, isQuotaError: boolean): void {
   }
 }
 
+/**
+ * Check if a model is currently blocked
+ */
+export function isModelBlocked(id: string): boolean {
+  const block = blockedModels.get(id);
+  if (!block) return false;
+
+  if (Date.now() > block.expiresAt) {
+    blockedModels.delete(id);
+    return false;
+  }
+  return true;
+}
+
+// Model exports for system-wide consumption
+export const AVAILABLE_MODELS = getModelPool();
 export const DEFAULT_MODEL_ID = getModelPool()[0]?.id || 'z-ai/glm-4.5-air:free';
 export const FALLBACK_MODEL_IDS = getModelPool().slice(1).map(m => m.id);
 

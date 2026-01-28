@@ -10,10 +10,16 @@ import Sidebar from '@/components/Workspace/Sidebar';
 import RightPanel from '@/components/Workspace/RightPanel';
 import MainArea from '@/components/Workspace/MainArea';
 import SettingsModal from '@/components/SettingsModal';
+import ChannelSelector from '@/components/ChannelSelector';
+import WhatsAppQR from '@/components/WhatsAppQR';
 import { Language } from '@/lib/i18n';
 import Header from '@/components/Header';
 
+// Channel type for multi-channel support
+type Channel = 'none' | 'web' | 'whatsapp';
+
 export default function Home() {
+  const [selectedChannel, setSelectedChannel] = useState<Channel>('none');
   const [memory, setMemory] = useState<Memory | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -165,16 +171,34 @@ export default function Home() {
     }
   }, [memory, currentMode, currentModelId, handleModeChange, handleReset]);
 
+  // Show loading spinner while memory loads
   if (!memory) {
     return (
-      <div className="min-h-screen bg-zinc-950 flex items-center justify-center">
-        <div className="w-8 h-8 rounded-full border-2 border-zinc-800 border-t-zinc-400 animate-spin" />
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="w-8 h-8 rounded-full border-2 border-zinc-300 dark:border-zinc-700 border-t-zinc-600 dark:border-t-zinc-400 animate-spin" />
       </div>
     );
   }
 
-  return (
+  // Show channel selector if no channel selected
+  if (selectedChannel === 'none') {
+    return (
+      <ChannelSelector
+        onSelectWeb={() => setSelectedChannel('web')}
+        onSelectWhatsApp={() => setSelectedChannel('whatsapp')}
+      />
+    );
+  }
 
+  // Show WhatsApp QR screen
+  if (selectedChannel === 'whatsapp') {
+    return (
+      <WhatsAppQR onBack={() => setSelectedChannel('none')} />
+    );
+  }
+
+  // Web channel - show full chat interface
+  return (
     <div className="h-screen flex overflow-hidden font-sans transition-colors duration-200 bg-background text-foreground selection:bg-blue-100 selection:text-blue-900 dark:selection:bg-zinc-800 dark:selection:text-white">
       {/* 1. Left Sidebar */}
       <Sidebar
@@ -203,10 +227,9 @@ export default function Home() {
             language={currentLanguage}
           />
         </div>
-        {/* Transparent wrapper/overlay for modals if needed */}
       </MainArea>
 
-      {/* 3. Right Panel (System Status) - Only shown when opened from sidebar */}
+      {/* 3. Right Panel (System Status) */}
       {isRightPanelOpen && (
         <div className="hidden xl:block">
           <RightPanel
@@ -230,3 +253,4 @@ export default function Home() {
     </div>
   );
 }
+

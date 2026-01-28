@@ -74,13 +74,13 @@ CRITICAL: Use this real-time data as your PRIMARY source. Do NOT say you cannot 
         for (const modelId of modelsToTry) {
             try {
                 console.log(`🤖 Trying model: ${modelId}`);
-                const response = await callOpenRouter(messages, OPENROUTER_API_KEY, modelId);
-                const data = await response.json();
+                const data = await callOpenRouter(messages, OPENROUTER_API_KEY, modelId);
 
-                if (data.error) {
-                    console.warn(`Model ${modelId} error:`, data.error);
-                    lastError = new Error(data.error.message || 'Unknown error');
-                    continue; // Try next model
+                // Check for valid response
+                if (!data.choices || !data.choices[0]?.message?.content) {
+                    console.warn(`Model ${modelId} returned empty response`);
+                    lastError = new Error('Empty response from model');
+                    continue;
                 }
 
                 return NextResponse.json({
@@ -115,9 +115,11 @@ async function callOpenRouter(
     apiKey: string,
     model: string,
     retries = 2
-): Promise<Response> {
+): Promise<{ choices?: { message: { content: string } }[]; error?: { message: string } }> {
     for (let attempt = 1; attempt <= retries; attempt++) {
         try {
+            console.log(`🔄 OpenRouter request to ${model} (attempt ${attempt})`);
+
             const response = await fetch(OPENROUTER_API_URL, {
                 method: 'POST',
                 headers: {
@@ -130,27 +132,42 @@ async function callOpenRouter(
                     model: model,
                     messages,
                     max_tokens: 1024,
-                    temperature: 0.5, // Lower for more consistent assistant behavior
+                    temperature: 0.5,
                 })
             });
 
+            // Handle rate limiting
             if (response.status === 429) {
                 const delay = Math.pow(2, attempt) * 1000;
-                console.warn(`Rate limit hit. Retrying in ${delay}ms...`);
+                console.warn(`⚠️ Rate limit hit for ${model}. Retrying in ${delay}ms...`);
                 await new Promise(resolve => setTimeout(resolve, delay));
                 continue;
             }
 
+            // Parse response body
+            const data = await response.json();
+
+            // Log the response for debugging
             if (!response.ok) {
-                const errText = await response.text();
-                throw new Error(`OpenRouter responded with ${response.status}: ${errText}`);
+                console.error(`❌ ${model} HTTP ${response.status}:`, JSON.stringify(data));
+                throw new Error(`HTTP ${response.status}: ${data.error?.message || 'Unknown error'}`);
             }
 
-            return response;
+            // Check for API-level errors
+            if (data.error) {
+                console.error(`❌ ${model} API error:`, data.error);
+                throw new Error(data.error.message || 'API returned error');
+            }
+
+            console.log(`✅ ${model} responded successfully`);
+            return data;
+
         } catch (e) {
+            console.error(`❌ ${model} attempt ${attempt} failed:`, e);
             if (attempt === retries) throw e;
-            console.warn(`Attempt ${attempt} failed, retrying...`);
+            console.warn(`🔄 Retrying ${model}...`);
         }
     }
     throw new Error('Max retries exceeded');
 }
+

@@ -7,48 +7,93 @@
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue?style=flat-square&logo=typescript)](https://www.typescriptlang.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square)](https://opensource.org/licenses/MIT)
 
-**Lumora AI Workspace** is an elegant, desktop-first environment designed to streamline human-AI collaboration. It moves beyond the limitations of standard chat interfaces, offering a high-density, distraction-free workspace tailored for deep work, research, and creative brainstorming.
+**Lumora AI Workspace** is an elegant, desktop-first environment designed to streamline human-AI collaboration. It supports multi-channel communication through **Web** and **WhatsApp**, powered by GLM 4.5 Air as the primary LLM.
+
+---
+
+## ⚠️ Important Disclaimer
+
+> **WhatsApp Integration**: This project uses WhatsApp Web automation via Evolution API and is **NOT affiliated with Meta or WhatsApp**. This integration is for **internal use, experimentation, and portfolio demonstration ONLY**. Do not use for production or commercial purposes.
+
+---
+
+## 🏗️ Architecture
+
+```
+┌─────────────────────────────────────────────────────┐
+│                    User Interface                   │
+├──────────────────────┬──────────────────────────────┤
+│     WebChannel       │      WhatsAppChannel         │
+│   (Next.js Web UI)   │   (Evolution API + Webhook)  │
+└──────────┬───────────┴──────────────┬───────────────┘
+           │                          │
+           ▼                          ▼
+┌─────────────────────────────────────────────────────┐
+│              MessageNormalizer                      │
+│         Unified format for all channels             │
+└─────────────────────────┬───────────────────────────┘
+                          │
+                          ▼
+┌─────────────────────────────────────────────────────┐
+│               AssistantCore                         │
+│   Intent detection, reasoning, task logic           │
+└─────────────────────────┬───────────────────────────┘
+                          │
+                          ▼
+┌─────────────────────────────────────────────────────┐
+│               LLMService                            │
+│         GLM 4.5 Air (Primary)                       │
+└─────────────────────────┬───────────────────────────┘
+                          │ (on failure)
+                          ▼
+┌─────────────────────────────────────────────────────┐
+│             FallbackService                         │
+│    Llama 3.3 → Llama 3.2 → Gemma 3                 │
+│         + Logging every fallback                    │
+└─────────────────────────────────────────────────────┘
+```
+
+### Core Modules
+
+| Module | Description |
+|--------|-------------|
+| `AssistantCore` | Channel-agnostic reasoning and intent handling |
+| `LLMService` | GLM 4.5 Air integration with timeout handling |
+| `FallbackService` | Automatic fallback with comprehensive logging |
+| `MessageNormalizer` | Unified input format for Web & WhatsApp |
+| `WhatsAppChannel` | Evolution API integration for WhatsApp |
+| `Logger` | Centralized logging for all AI interactions |
+
+---
+
+## 🧠 LLM Configuration
+
+| Role | Model | Notes |
+|------|-------|-------|
+| **Primary** | GLM 4.5 Air | Single-core inference, optimized for assistant tasks |
+| Fallback #1 | Llama 3.3 70B | Used on timeout, rate limit, or error |
+| Fallback #2 | Llama 3.2 3B | Lightweight alternative |
+| Fallback #3 | Gemma 3 4B | Last resort |
+
+All fallback events are logged with reason and context.
 
 ---
 
 ## 🎨 Design Philosophy
 
-We believe that professional tools should be quiet, yet powerful. The workspace is built on a custom design system that prioritizes long-form productivity:
-
-- **Calmed Palette**: Utilizing "Bone White" for light mode and "Soft Dark" for dark mode to reduce ocular strain.
-- **Subtle Precision**: Standardized ultra-dark borders (`zinc-900`) that provide structure without visual noise.
-- **Glassmorphism**: Subtle backdrop blurs and transitions that create a sense of depth and focus.
-
----
-
-## 🧠 Core Intelligence
-
-The workspace is powered by modern LLMs and adaptive cognition modes:
-
-- **Adaptive Personality Modes**: Switching between **Mentor**, **Peer**, **Strict**, and **Creative** states to align the AI's output with your specific task.
-- **Multi-Model Support**: Seamlessly toggle between industry-leading models including Llama 3.3, Gemini 2.0 Flash, Qwen 2.5, and Mistral.
-- **Stateless Privacy**: Built with a "stateless" philosophy—your conversation history is transient, ensuring maximum privacy for sensitive work.
+- **Calmed Palette**: "Bone White" for light mode, "Soft Dark" for dark mode
+- **Subtle Precision**: Ultra-dark borders (`zinc-900`) for structure without noise
+- **Glassmorphism**: Subtle backdrop blurs for depth and focus
 
 ---
 
 ## ✨ Key Features
 
-- **Desktop-First Architecture**: Optimized for wide screens with a 3-column layout (Navigation, Chat, Context).
-- **Multimodal Input**: Support for text drafting, **Speech-to-Text** (Voice Input), and direct file uploads (`.txt`, `.md`).
-- **Interactive Branding**: Subtle "Built by LumoraLabs" identity that reflects a commitment to quality engineering.
-- **Bilingual Interface**: Native support for English (US) and Bahasa Indonesia (ID) with an instant language toggle.
-
----
-
-## 🛠️ Technical Implementation
-
-Built with a modern, type-safe stack:
-
-- **Core**: Next.js 15 (App Router) & React 19
-- **Style**: Tailwind CSS v4 (Class-based theming)
-- **Icons**: Lucide React
-- **Integration**: OpenRouter API for intelligent model routing
-- **Theme**: `next-themes` with hydration-safe context
+- **Multi-Channel Support**: Web interface + WhatsApp (via Evolution API)
+- **Adaptive Personality Modes**: Mentor, Peer, Strict, Creative
+- **Speech-to-Text**: Voice input support
+- **Bilingual Interface**: English (US) and Bahasa Indonesia (ID)
+- **Self-Verification**: AI validates responses before delivering
 
 ---
 
@@ -56,7 +101,8 @@ Built with a modern, type-safe stack:
 
 ### Prerequisites
 - Node.js 18+
-- An API Key from [OpenRouter](https://openrouter.ai/)
+- [OpenRouter API Key](https://openrouter.ai/)
+- [Evolution API](https://github.com/EvolutionAPI/evolution-api) (for WhatsApp)
 
 ### Setup
 
@@ -68,16 +114,46 @@ Built with a modern, type-safe stack:
    ```
 
 2. **Environment Configuration**
-   Create a `.env.local` file:
+   ```bash
+   cp .env.example .env.local
+   ```
+   
+   Edit `.env.local`:
    ```env
+   # OpenRouter
    OPENROUTER_API_KEY=your_key_here
+   
+   # WhatsApp (Evolution API)
+   EVOLUTION_API_URL=http://localhost:8080
+   EVOLUTION_API_KEY=your_evolution_key_here
+   EVOLUTION_INSTANCE=ai-assistant
    ```
 
 3. **Development**
    ```bash
    npm run dev
    ```
-   Open [http://localhost:3000](http://localhost:3000) to enter the workspace.
+   Open [http://localhost:3000](http://localhost:3000)
+
+### WhatsApp Setup
+
+1. Start Evolution API (Docker recommended)
+2. Open the app and select "Use on WhatsApp"
+3. Scan the QR code with your phone
+4. Configure webhook URL in Evolution API:
+   ```
+   POST http://your-domain/api/whatsapp/webhook
+   ```
+
+---
+
+## 🔒 Known Limitations
+
+1. **WhatsApp Non-Official**: Uses WhatsApp Web automation. Not endorsed by Meta.
+2. **Evolution API Required**: External dependency must be running for WhatsApp.
+3. **Free Model Limits**: 50 requests/day on OpenRouter free tier.
+4. **No Persistent Storage**: Session context is ephemeral (30-minute TTL).
+5. **Rate Limits**: Automatic fallback on rate limit, but may affect response time.
 
 ---
 

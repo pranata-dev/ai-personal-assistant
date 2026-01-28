@@ -1,8 +1,10 @@
 import { NextResponse } from 'next/server';
-import { getSystemPrompt, formatConversationHistory, detectOperatingMode } from '@/lib/ai-engine';
-import { searchWeb as performWebSearch } from '@/lib/web-search';
+import { getSystemPrompt, detectOperatingMode } from '@/lib/ai-engine';
 import { PersonalityMode } from '@/types';
 import { DEFAULT_MODEL_ID, FALLBACK_MODEL_IDS } from '@/lib/models';
+import { detectRetrievalIntent, extractSearchQuery } from '@/lib/retrieval-intent';
+import { fetchFromJina, buildRetrievalContext } from '@/lib/retrieval-service';
+import { log } from '@/lib/logger';
 
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
 const OPENROUTER_API_URL = 'https://openrouter.ai/api/v1/chat/completions';
@@ -25,48 +27,40 @@ export async function POST(request: Request) {
         // Detect operating mode (assistant vs chat)
         const operatingMode = detectOperatingMode(message);
 
-        // 1. Check for web search triggers (expanded list for current events)
-        const searchKeywords = [
-            'berita', 'news', 'apa itu', 'siapa', 'cari', 'presiden', 'gubernur',
-            'cuaca', 'harga', 'jadwal', 'timnas', 'skor', 'gempa', 'banjir',
-            'traffic', 'macet', 'wik', 'current', 'sekarang', 'saat ini',
-            'terbaru', 'latest', 'today', 'hari ini', 'menteri', 'minister',
-            'who is', 'what is', 'when did', 'kapan'
-        ];
-        const lowerMessage = message.toLowerCase();
-        const shouldSearch = searchKeywords.some(keyword => lowerMessage.includes(keyword));
+        // 1. Detect if retrieval is needed using intent detection
+        const retrievalIntent = detectRetrievalIntent(message);
+        let retrievalContext = '';
+        let retrievalNotice = '';
 
-        let searchContext = '';
-
-        if (shouldSearch) {
-            try {
-                // Timeout web search after 5 seconds
-                const searchPromise = performWebSearch(message);
-                const timeoutPromise = new Promise<null>((_, reject) =>
-                    setTimeout(() => reject(new Error('Search timeout')), 5000)
-                );
-
-                const searchResult = await Promise.race([searchPromise, timeoutPromise]).catch(() => null);
-
-                if (searchResult) {
-                    // Limit search context to 1500 characters to avoid token limits
-                    const limitedResult = searchResult.substring(0, 1500);
-                    searchContext = `
-REAL-TIME SEARCH RESULTS:
-${limitedResult}
-
-Use this data as your PRIMARY source.`;
+        if (retrievalIntent.shouldRetrieve) {
+            log('info', 'system', 'RETRIEVAL_TRIGGERED', {
+                data: {
+                    trigger: retrievalIntent.matchedTrigger,
+                    confidence: retrievalIntent.confidence,
+                    reason: retrievalIntent.reason
                 }
-            } catch (e) {
-                console.warn('Web search failed:', e);
-                // Continue without search context
+            });
+
+            // Extract optimized search query
+            const searchQuery = extractSearchQuery(message);
+
+            // Fetch from Jina AI
+            const result = await fetchFromJina(searchQuery);
+
+            if (result.success) {
+                retrievalContext = buildRetrievalContext(result);
+                console.log(`✅ Jina AI retrieval successful (${result.content.length} chars, ${result.processingTimeMs}ms)`);
+            } else {
+                // Retrieval failed - continue without it
+                retrievalNotice = '\n\n(Note: Real-time data retrieval was attempted but unavailable. Response based on available knowledge.)';
+                console.warn(`⚠️ Jina AI retrieval failed: ${result.error}`);
             }
         }
 
-        // 2. Prepare System Prompt with operating mode
+        // 2. Prepare System Prompt with retrieval context
         const baseSystemPrompt = getSystemPrompt(mode as PersonalityMode, operatingMode);
-        const fullSystemPrompt = searchContext
-            ? `${baseSystemPrompt}\n\n${searchContext}`
+        const fullSystemPrompt = retrievalContext
+            ? `${baseSystemPrompt}\n\n${retrievalContext}`
             : baseSystemPrompt;
 
         // 3. Prepare Messages for API
@@ -97,8 +91,9 @@ Use this data as your PRIMARY source.`;
                 }
 
                 return NextResponse.json({
-                    response: data.choices[0].message.content,
-                    model: modelId // Return which model was used
+                    response: data.choices[0].message.content + retrievalNotice,
+                    model: modelId,
+                    usedRetrieval: retrievalIntent.shouldRetrieve && retrievalContext !== ''
                 });
             } catch (e) {
                 console.warn(`Model ${modelId} failed:`, e);

@@ -46,13 +46,6 @@ export const AVAILABLE_MODELS: Model[] = [
     description: 'Fallback model - Google compact model.',
     isFree: true,
   },
-  {
-    id: 'qwen/qwen3-32b:free',
-    name: 'Qwen3 32B',
-    role: 'fallback',
-    description: 'Fallback model - Alibaba model.',
-    isFree: true,
-  },
 ];
 
 // PRIMARY MODEL - GLM-4.5 Air
@@ -64,7 +57,6 @@ export const FALLBACK_MODEL_IDS = [
   'deepseek/deepseek-r1-0528:free',
   'mistralai/mistral-small-3.1-24b-instruct:free',
   'google/gemma-3-27b-it:free',
-  'qwen/qwen3-32b:free',
 ];
 
 export function getModelById(id: string): Model | undefined {

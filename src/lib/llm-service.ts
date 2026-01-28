@@ -6,7 +6,7 @@
  * Single-core inference with automatic fallback.
  */
 
-import { DEFAULT_MODEL_ID, FALLBACK_MODEL_IDS, reportModelFailure } from './models';
+import { reportModelFailure } from './models';
 
 const OPENROUTER_API_URL = 'https://openrouter.ai/api/v1/chat/completions';
 
@@ -44,23 +44,20 @@ export async function callLLM(
     apiKey: string
 ): Promise<LLMResponse> {
     const startTime = Date.now();
-    const selectedModel = request.model || DEFAULT_MODEL_ID;
-    const timeout = request.timeout || DEFAULT_TIMEOUT_MS;
 
-    // Models to try: selected first, then fallbacks
-    const modelsToTry = [
-        selectedModel,
-        ...FALLBACK_MODEL_IDS.filter(m => m !== selectedModel)
-    ];
+    // STRICT SINGLE MODEL POLICY
+    const modelId = 'z-ai/glm-4.5-air:free';
+    const timeout = request.timeout || 60000; // Increased timeout for retries
 
     let lastError: LLMError | null = null;
+    const MAX_RETRIES = 5;
 
-    for (let i = 0; i < modelsToTry.length; i++) {
-        const modelId = modelsToTry[i];
-        const isFallback = i > 0;
+    // Exponential backoff: 2s, 4s, 8s, 16s, 32s
+    const getBackoff = (attempt: number) => Math.min(1000 * Math.pow(2, attempt + 1), 45000);
 
+    for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
         try {
-            console.log(`🤖 LLM Request: ${modelId}${isFallback ? ' (fallback)' : ' (primary)'}`);
+            console.log(`🤖 LLM Request (Attempt ${attempt + 1}/${MAX_RETRIES + 1}): ${modelId}`);
 
             const response = await callSingleModel(
                 modelId,
@@ -73,15 +70,10 @@ export async function callLLM(
 
             const processingTimeMs = Date.now() - startTime;
 
-            if (isFallback) {
-                console.log(`⚠️ Fallback used: ${modelId} (reason: ${lastError?.message || 'unknown'})`);
-            }
-
             return {
                 content: response.content,
                 modelUsed: modelId,
-                fallbackUsed: isFallback,
-                fallbackReason: isFallback ? lastError?.message : undefined,
+                fallbackUsed: false,
                 tokensUsed: response.tokensUsed,
                 processingTimeMs
             };
@@ -94,48 +86,32 @@ export async function callLLM(
                 modelAttempted: modelId
             };
 
-            // Check for Quota/Billing errors
-            const isQuotaError = errorMessage.toLowerCase().includes('quota') ||
-                errorMessage.toLowerCase().includes('billing') ||
-                errorMessage.toLowerCase().includes('credit') ||
-                errorMessage.toLowerCase().includes('unauthorized') ||
-                errorMessage.toLowerCase().includes('invalid API key');
+            const isRateLimit = errorMessage.toLowerCase().includes('rate limit') ||
+                errorMessage.includes('429');
 
-            // Report to Quota Guard
-            reportModelFailure(modelId, isQuotaError);
+            // Only retry on Rate Limits or temporary server errors (502/503)
+            const isRetryable = isRateLimit ||
+                errorMessage.includes('502') ||
+                errorMessage.includes('503') ||
+                errorMessage.includes('fetch failed');
 
-            console.warn(`❌ Model ${modelId} failed: ${errorMessage}`);
+            if (isRetryable && attempt < MAX_RETRIES) {
+                const backoffMs = getBackoff(attempt);
+                console.warn(`⚠️ Attempt ${attempt + 1} failed: ${errorMessage}`);
+                console.warn(`⏳ Waiting ${backoffMs / 1000}s before retry...`);
 
-            // Smart Backoff & Failover (helps with rate limits vs outages)
-            if (i < modelsToTry.length - 1) {
-                const isRateLimit = errorMessage.toLowerCase().includes('rate limit') ||
-                    errorMessage.includes('429');
-                const isOutage = errorMessage.toLowerCase().includes('no endpoints') ||
-                    errorMessage.includes('502') ||
-                    errorMessage.includes('503');
-
-                if (isRateLimit) {
-                    const backoffMs = Math.min(1000 * Math.pow(2, i), 10000);
-                    console.log(`⚠️ Switching model due to Rate Limit (waiting ${backoffMs}ms)...`);
-                    await new Promise(resolve => setTimeout(resolve, backoffMs));
-                } else if (isOutage) {
-                    console.log(`⚠️ Switching model due to Outage (immediate failover)...`);
-                    // Skip wait for immediate failover on known outages
-                } else {
-                    // Default backoff for unknown errors
-                    const backoffMs = Math.min(1000 * Math.pow(2, i), 10000);
-                    console.log(`⏳ Waiting ${backoffMs}ms before trying fallback model...`);
-                    await new Promise(resolve => setTimeout(resolve, backoffMs));
-                }
+                await new Promise(resolve => setTimeout(resolve, backoffMs));
+                continue;
             }
 
-            // Continue to next model
-            continue;
+            // If not retryable or max retries reached, throw
+            console.error(`❌ Model ${modelId} failed permanently: ${errorMessage}`);
+            break;
         }
     }
 
-    // All models failed
-    throw new Error(`All LLM models failed. Last error: ${lastError?.message || 'Unknown'}`);
+    // All retries failed
+    throw new Error(`LLM Failed after ${MAX_RETRIES + 1} attempts. Last error: ${lastError?.message || 'Unknown'}`);
 }
 
 /**

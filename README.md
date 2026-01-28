@@ -62,6 +62,7 @@
 | `FallbackService` | Automatic fallback with comprehensive logging |
 | `MessageNormalizer` | Unified input format for Web & WhatsApp |
 | `WhatsAppChannel` | Evolution API integration for WhatsApp |
+| `RetrievalService` | Jina AI HTTP client for real-time information |
 | `Logger` | Centralized logging for all AI interactions |
 
 ---
@@ -72,10 +73,62 @@
 |------|-------|-------|
 | **Primary** | GLM 4.5 Air | Single-core inference, optimized for assistant tasks |
 | Fallback #1 | Llama 3.3 70B | Used on timeout, rate limit, or error |
-| Fallback #2 | Llama 3.2 3B | Lightweight alternative |
-| Fallback #3 | Gemma 3 4B | Last resort |
+| Fallback #2 | DeepSeek R1 | Strong reasoning |
+| Fallback #3 | Mistral Small 3.1 | Fast and reliable |
+| Fallback #4 | Gemma 3 27B | Google model |
 
 All fallback events are logged with reason and context.
+
+---
+
+## 🔍 Real-Time Information (Jina AI)
+
+The assistant uses **Jina AI** as a conditional retrieval service for up-to-date information.
+
+### How It Works
+
+```
+User Input → Intent Detection → Need real-time data?
+                                    │
+                            ┌───────┴───────┐
+                            │ YES           │ NO
+                            ▼               ▼
+                       Jina AI         Direct LLM
+                       (fetch)         response
+                            │
+                            ▼
+                    Sanitize & Limit
+                     (max 2000 chars)
+                            │
+                            ▼
+                  GLM 4.5 Air (reasoning)
+                            │
+                            ▼
+                     Final Response
+```
+
+### Retrieval Triggers
+
+The assistant will fetch real-time data when detecting:
+- Time-sensitive keywords: "today", "latest", "current", "news", "update"
+- Market/finance: "price", "stock", "bitcoin", "crypto"
+- Current events: "who is the president", "breaking news"
+
+### Retrieval Rules
+
+| Rule | Implementation |
+|------|----------------|
+| Timeout | 6 seconds max |
+| Content limit | 2000 characters |
+| Disclaimer | "Based on recent publicly available information..." |
+| Fallback | Continue without data if retrieval fails |
+
+### Important Limitations
+
+- Jina AI is a **DATA SOURCE**, not a reasoning engine
+- GLM 4.5 Air performs all summarization and reasoning
+- Retrieved data is treated as external context, not ground truth
+- The assistant will acknowledge uncertainty if data is incomplete
 
 ---
 

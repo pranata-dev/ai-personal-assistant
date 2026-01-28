@@ -106,6 +106,12 @@ export async function callLLM(
 
             console.warn(`❌ Model ${modelId} failed: ${errorMessage}`);
 
+            // Smart Backoff: Delay before next model (helps with rate limits)
+            if (i < modelsToTry.length - 1) {
+                console.log('⏳ Waiting 2s before trying fallback model...');
+                await new Promise(resolve => setTimeout(resolve, 2000));
+            }
+
             // Continue to next model
             continue;
         }

@@ -1,5 +1,5 @@
 // Enhanced Web Search using DuckDuckGo Instant Answers + Wikipedia
-// DuckDuckGo for quick facts, Wikipedia for encyclopedic knowledge
+// Priority: Direct Wikipedia articles > DuckDuckGo > Wikipedia Search
 
 interface SearchResult {
     title: string;
@@ -8,11 +8,75 @@ interface SearchResult {
     source: 'duckduckgo' | 'wikipedia';
 }
 
+// Special handler for common "current leader" queries - directly fetch Wikipedia article
+async function fetchCurrentLeader(query: string): Promise<SearchResult | null> {
+    const lowerQuery = query.toLowerCase();
+
+    // Map common queries to Wikipedia article titles
+    const leaderMappings: { patterns: string[]; articleTitle: string; lang: 'id' | 'en' }[] = [
+        {
+            patterns: ['presiden indonesia', 'president of indonesia', 'siapa presiden', 'indonesian president'],
+            articleTitle: 'President_of_Indonesia',
+            lang: 'en'
+        },
+        {
+            patterns: ['wakil presiden', 'vice president of indonesia'],
+            articleTitle: 'Vice_President_of_Indonesia',
+            lang: 'en'
+        },
+        {
+            patterns: ['gubernur jakarta', 'governor of jakarta'],
+            articleTitle: 'Governor_of_Jakarta',
+            lang: 'en'
+        }
+    ];
+
+    for (const mapping of leaderMappings) {
+        if (mapping.patterns.some(p => lowerQuery.includes(p))) {
+            console.log(`🎯 Direct fetch for: ${mapping.articleTitle}`);
+            try {
+                const response = await fetch(
+                    `https://${mapping.lang}.wikipedia.org/api/rest_v1/page/summary/${mapping.articleTitle}`,
+                    {
+                        headers: {
+                            'User-Agent': 'AIAssistant/1.0',
+                            'Accept': 'application/json'
+                        }
+                    }
+                );
+
+                if (!response.ok) continue;
+
+                const data = await response.json();
+                if (data.extract) {
+                    console.log(`✅ Found direct Wikipedia article: ${data.title}`);
+                    return {
+                        title: data.title,
+                        snippet: data.extract,
+                        url: data.content_urls?.desktop?.page || '',
+                        source: 'wikipedia'
+                    };
+                }
+            } catch (e) {
+                console.error('Direct fetch error:', e);
+            }
+        }
+    }
+    return null;
+}
+
 // DuckDuckGo Instant Answer API - Great for quick facts & current info
 async function searchDuckDuckGo(query: string): Promise<SearchResult | null> {
     try {
-        const encodedQuery = encodeURIComponent(query);
-        console.log('🦆 DuckDuckGo search for:', query);
+        // Also try English version for better results
+        const englishQuery = query
+            .replace(/siapa\s*(itu)?\s*/gi, 'who is ')
+            .replace(/presiden indonesia/gi, 'president of indonesia')
+            .replace(/saat ini/gi, 'current')
+            .replace(/sekarang/gi, 'current');
+
+        const encodedQuery = encodeURIComponent(englishQuery);
+        console.log('🦆 DuckDuckGo search for:', englishQuery);
 
         const response = await fetch(
             `https://api.duckduckgo.com/?q=${encodedQuery}&format=json&no_html=1&skip_disambig=1`,
@@ -100,6 +164,9 @@ async function searchWikipedia(query: string): Promise<SearchResult[]> {
             .replace(/berita\s*(tentang|terbaru)?\s*/gi, '')
             .replace(/info\s*(tentang)?\s*/gi, '')
             .replace(/cari\s*(tentang|kan)?\s*/gi, '')
+            .replace(/saat ini/gi, '')
+            .replace(/sekarang/gi, '')
+            .replace(/current/gi, '')
             .replace(/\?/g, '')
             .trim();
 
@@ -199,9 +266,15 @@ async function searchWikipediaAPI(query: string): Promise<SearchResult[]> {
     }
 }
 
-// Main search function - tries DuckDuckGo first for quick facts, then Wikipedia
+// Main search function - tries direct article fetch first, then DuckDuckGo, then Wikipedia search
 export async function searchWeb(query: string): Promise<string> {
     console.log('🔍 Starting enhanced web search for:', query);
+
+    // 0. Try direct article fetch for known queries (e.g., "president of indonesia")
+    const directResult = await fetchCurrentLeader(query);
+    if (directResult) {
+        return formatSingleResult(directResult);
+    }
 
     // 1. Try DuckDuckGo for instant answers (fast & current)
     const ddgResult = await searchDuckDuckGo(query);

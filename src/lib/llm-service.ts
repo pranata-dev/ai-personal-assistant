@@ -47,17 +47,19 @@ export async function callLLM(
 
     // STRICT SINGLE MODEL POLICY
     const modelId = 'z-ai/glm-4.5-air:free';
-    const timeout = request.timeout || 60000; // Increased timeout for retries
+    // Massive timeout to accommodate long queues (10 mins)
+    const timeout = request.timeout || 600000;
 
     let lastError: LLMError | null = null;
-    const MAX_RETRIES = 5;
+    const MAX_RETRIES = 50; // Persistent Queue: ~8 minutes
 
-    // Exponential backoff: 2s, 4s, 8s, 16s, 32s
-    const getBackoff = (attempt: number) => Math.min(1000 * Math.pow(2, attempt + 1), 45000);
+    // Capped backoff (max 10s wait)
+    // 2s, 4s, 8s, 10s, 10s, 10s ...
+    const getBackoff = (attempt: number) => Math.min(1000 * Math.pow(2, attempt + 1), 10000);
 
     for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
         try {
-            console.log(`🤖 LLM Request (Attempt ${attempt + 1}/${MAX_RETRIES + 1}): ${modelId}`);
+            console.log(`🤖 LLM Request (Attempt ${attempt + 1}/${MAX_RETRIES}): ${modelId}`);
 
             const response = await callSingleModel(
                 modelId,
@@ -135,8 +137,8 @@ async function callSingleModel(
             headers: {
                 'Authorization': `Bearer ${apiKey}`,
                 'Content-Type': 'application/json',
-                'HTTP-Referer': process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000',
-                'X-Title': 'AI Personal Assistant'
+                'HTTP-Referer': process.env.NEXT_PUBLIC_SITE_URL || 'https://github.com/pranata-dev/ai-personal-assistant',
+                'X-Title': 'AI Personal Assistant (Dev)'
             },
             body: JSON.stringify({
                 model,

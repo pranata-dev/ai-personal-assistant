@@ -6,7 +6,7 @@
  * Single-core inference with automatic fallback.
  */
 
-import { DEFAULT_MODEL_ID, FALLBACK_MODEL_IDS } from './models';
+import { DEFAULT_MODEL_ID, FALLBACK_MODEL_IDS, reportModelFailure } from './models';
 
 const OPENROUTER_API_URL = 'https://openrouter.ai/api/v1/chat/completions';
 
@@ -94,6 +94,16 @@ export async function callLLM(
                 modelAttempted: modelId
             };
 
+            // Check for Quota/Billing errors
+            const isQuotaError = errorMessage.toLowerCase().includes('quota') ||
+                errorMessage.toLowerCase().includes('billing') ||
+                errorMessage.toLowerCase().includes('credit') ||
+                errorMessage.toLowerCase().includes('unauthorized') ||
+                errorMessage.toLowerCase().includes('invalid API key');
+
+            // Report to Quota Guard
+            reportModelFailure(modelId, isQuotaError);
+
             console.warn(`❌ Model ${modelId} failed: ${errorMessage}`);
 
             // Continue to next model
@@ -145,8 +155,19 @@ async function callSingleModel(
         }
 
         if (!response.ok) {
-            const errText = await response.text();
-            throw new Error(`API error ${response.status}: ${errText}`);
+            let errorMsg = `API error ${response.status}`;
+            try {
+                const errJson = await response.json();
+                if (errJson.error?.message) {
+                    errorMsg = errJson.error.message; // Use the clean message from provider
+                } else {
+                    errorMsg += `: ${JSON.stringify(errJson)}`;
+                }
+            } catch {
+                const errText = await response.text();
+                errorMsg += `: ${errText}`;
+            }
+            throw new Error(errorMsg);
         }
 
         const data = await response.json();

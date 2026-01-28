@@ -21,11 +21,11 @@ const BLOCK_DURATION_MS = 15 * 60 * 1000; // 15 minutes
 
 // Base metadata for known models (used to populate descriptions)
 const MODEL_METADATA: Record<string, Partial<Model>> = {
-  'z-ai/glm-4.5-air:free': { name: 'GLM 4.5 Air', description: 'Primary AI model - optimized for personal assistant tasks.' },
-  'meta-llama/llama-3.3-70b-instruct:free': { name: 'Llama 3.3 70B', description: 'Fallback model - used when primary is unavailable.' },
-  'deepseek/deepseek-r1-0528:free': { name: 'DeepSeek R1', description: 'Fallback model - excellent reasoning.' },
-  'mistralai/mistral-small-3.1-24b-instruct:free': { name: 'Mistral Small 3.1', description: 'Fallback model - fast and reliable.' },
-  'google/gemma-3-27b-it:free': { name: 'Gemma 3 27B', description: 'Fallback model - Google compact model.' },
+  'z-ai/glm-4.5-air': { name: 'GLM 4.5 Air', description: 'Primary AI model - optimized for personal assistant tasks.' },
+  'meta-llama/llama-3.3-70b-instruct': { name: 'Llama 3.3 70B', description: 'Fallback model - used when primary is unavailable.' },
+  'deepseek/deepseek-r1-0528': { name: 'DeepSeek R1', description: 'Fallback model - excellent reasoning.' },
+  'mistralai/mistral-small-3.1-24b-instruct': { name: 'Mistral Small 3.1', description: 'Fallback model - fast and reliable.' },
+  'google/gemini-2.0-flash-001': { name: 'Gemini 2.0 Flash', description: 'Fallback model - Fast and reliable.' },
 };
 
 /**
@@ -40,11 +40,11 @@ export function getModelPool(): Model[] {
 
   // Default list if env is empty
   const modelIds = rawList.length > 0 ? rawList : [
-    'z-ai/glm-4.5-air:free',
-    'meta-llama/llama-3.3-70b-instruct:free',
-    'deepseek/deepseek-r1-0528:free',
-    'mistralai/mistral-small-3.1-24b-instruct:free',
-    'google/gemma-3-27b-it:free'
+    'z-ai/glm-4.5-air',
+    'meta-llama/llama-3.3-70b-instruct',
+    'deepseek/deepseek-r1-0528',
+    'mistralai/mistral-small-3.1-24b-instruct',
+    'google/gemini-2.0-flash-001'
   ];
 
   // 2. Filter & Map
@@ -71,7 +71,7 @@ export function getModelPool(): Model[] {
         name: meta.name || id.split('/').pop() || id,
         role: index === 0 ? 'primary' : 'fallback',
         description: meta.description || 'AI Model',
-        isFree: id.includes(':free')
+        isFree: id.includes(':free') // Likely false now, but keep logic
       };
     });
 }
@@ -109,7 +109,7 @@ export function isModelBlocked(id: string): boolean {
 
 // Backward compatibility and helpers
 export const AVAILABLE_MODELS = getModelPool(); // This might need to be dynamic if called repeatedly, but constant is fine for UI
-export const DEFAULT_MODEL_ID = 'z-ai/glm-4.5-air:free';
+export const DEFAULT_MODEL_ID = getModelPool()[0]?.id || 'z-ai/glm-4.5-air';
 export const FALLBACK_MODEL_IDS = getModelPool().slice(1).map(m => m.id);
 
 export function getModelById(id: string): Model | undefined {

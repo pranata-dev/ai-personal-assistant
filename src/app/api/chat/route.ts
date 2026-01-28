@@ -98,14 +98,23 @@ export async function POST(request: Request) {
             } catch (e) {
                 console.warn(`Model ${modelId} failed:`, e);
                 lastError = e as Error;
+
+                // If it's a quota error, we might still want to try other models *if* they are from different providers 
+                // or if some are free vs paid. But if all fail, we need the specific error.
                 continue; // Try next model
             }
         }
 
         // All models failed
         console.error('All models failed:', lastError);
+
+        let errorMessage = `All models unavailable: ${lastError?.message || 'Unknown error'}`;
+        if (lastError?.message?.includes('quota exceeded')) {
+            errorMessage = "AI service quota exceeded. Please try again later or check API limits.";
+        }
+
         return NextResponse.json(
-            { error: `All models unavailable: ${lastError?.message || 'Unknown error'}` },
+            { error: errorMessage },
             { status: 500 }
         );
 
@@ -151,7 +160,20 @@ async function callOpenRouter(
 
             clearTimeout(timeoutId);
 
-            // Handle rate limiting
+            // Handle non-retryable errors
+            if (response.status === 401 || response.status === 403) {
+                const errData = await response.json().catch(() => ({}));
+                console.error(`❌ ${model} Auth/Perm Error (${response.status}):`, errData);
+                throw new Error('Using invalid API key or unauthorized model');
+            }
+
+            if (response.status === 402) {
+                const errData = await response.json().catch(() => ({}));
+                console.error(`❌ ${model} Quota Exceeded (402):`, errData);
+                throw new Error('AI service quota exceeded');
+            }
+
+            // Handle rate limiting (Retryable)
             if (response.status === 429) {
                 const delay = Math.pow(2, attempt) * 1000;
                 console.warn(`⚠️ Rate limit hit for ${model}. Retrying in ${delay}ms...`);
@@ -165,12 +187,25 @@ async function callOpenRouter(
             // Log the response for debugging
             if (!response.ok) {
                 console.error(`❌ ${model} HTTP ${response.status}:`, JSON.stringify(data));
+
+                // Check if error message indicates quota/billing issues
+                const errorMsg = data.error?.message?.toLowerCase() || '';
+                if (errorMsg.includes('quota') || errorMsg.includes('billing') || errorMsg.includes('credit')) {
+                    throw new Error('AI service quota exceeded');
+                }
+
                 throw new Error(`HTTP ${response.status}: ${data.error?.message || 'Unknown error'}`);
             }
 
             // Check for API-level errors
             if (data.error) {
                 console.error(`❌ ${model} API error:`, data.error);
+
+                const errorMsg = data.error.message?.toLowerCase() || '';
+                if (errorMsg.includes('quota') || errorMsg.includes('billing') || errorMsg.includes('credit')) {
+                    throw new Error('AI service quota exceeded');
+                }
+
                 throw new Error(data.error.message || 'API returned error');
             }
 
@@ -178,9 +213,21 @@ async function callOpenRouter(
             return data;
 
         } catch (e) {
-            console.error(`❌ ${model} attempt ${attempt} failed:`, e);
+            const msg = e instanceof Error ? e.message : String(e);
+
+            // If it's a non-retryable error, rethrow immediately to skip retries
+            if (msg.includes('quota') || msg.includes('unauthorized') || msg.includes('invalid API key')) {
+                throw e;
+            }
+
+            console.error(`❌ ${model} attempt ${attempt} failed:`, msg);
+
             if (attempt === retries) throw e;
-            console.warn(`🔄 Retrying ${model}...`);
+
+            // Backoff for other errors (network, 5xx)
+            const delay = Math.pow(2, attempt) * 500;
+            console.warn(`🔄 Retrying ${model} in ${delay}ms...`);
+            await new Promise(resolve => setTimeout(resolve, delay));
         }
     }
     throw new Error('Max retries exceeded');

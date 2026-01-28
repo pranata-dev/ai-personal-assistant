@@ -8,7 +8,8 @@ export interface Model {
   isFree: boolean;
 }
 
-// Updated with verified free models from OpenRouter (as of 2024-2025)
+// Stable free models from OpenRouter with verified IDs
+// Using only models that are known to be reliable
 export const AVAILABLE_MODELS: Model[] = [
   {
     id: 'meta-llama/llama-3.3-70b-instruct:free',
@@ -18,31 +19,24 @@ export const AVAILABLE_MODELS: Model[] = [
     isFree: true,
   },
   {
-    id: 'deepseek/deepseek-r1-0528:free',
-    name: 'DeepSeek R1',
-    role: 'general',
-    description: 'Advanced reasoning model with chain-of-thought capabilities.',
-    isFree: true,
-  },
-  {
-    id: 'google/gemma-3-27b-it:free',
-    name: 'Gemma 3 27B',
-    role: 'general',
-    description: 'Google open model, great for general conversation.',
-    isFree: true,
-  },
-  {
-    id: 'mistralai/mistral-small-3.1-24b-instruct:free',
-    name: 'Mistral Small 3.1',
+    id: 'meta-llama/llama-3.2-3b-instruct:free',
+    name: 'Llama 3.2 3B',
     role: 'fast',
-    description: 'Fast and efficient, good for quick responses.',
+    description: 'Fast and lightweight model for quick responses.',
+    isFree: true,
+  },
+  {
+    id: 'google/gemma-3-4b-it:free',
+    name: 'Gemma 3 4B',
+    role: 'fast',
+    description: 'Google compact model, efficient for general tasks.',
     isFree: true,
   },
   {
     id: 'qwen/qwen3-4b:free',
     name: 'Qwen3 4B',
     role: 'fast',
-    description: 'Lightweight model, very fast for simple tasks.',
+    description: 'Lightweight Alibaba model, good for simple tasks.',
     isFree: true,
   },
 ];

@@ -100,11 +100,15 @@ RESPONSE GUIDELINES (Critical):
 4. Only explain reasoning if it adds value
 5. NO emojis unless specifically relevant
 
-SELF-CHECK (Before responding):
-- Is this response actionable?
-- Is more context required from the user?
-- Could this answer cause confusion if followed blindly?
-If clarification is needed, ask a focused follow-up question FIRST.`;
+SELF-VERIFICATION (MANDATORY - Do this silently before every response):
+Before finalizing your response, silently verify:
+1. Is this response actionable?
+2. Does it match the user's intent?
+3. Should I ask for clarification instead?
+4. Could following this response cause confusion or risk?
+
+If ANY verification fails, ask a focused clarifying question BEFORE proceeding with your answer.
+Do NOT output your verification process - only output the final response or clarifying question.`;
 
 export function getSystemPrompt(mode: PersonalityMode, operatingMode: OperatingMode = 'assistant'): string {
     const modeConfig = knowledgeBase.personality.modes[mode];

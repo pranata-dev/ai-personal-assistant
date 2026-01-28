@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
-import { getSystemPrompt, formatConversationHistory } from '@/lib/ai-engine';
+import { getSystemPrompt, formatConversationHistory, detectOperatingMode } from '@/lib/ai-engine';
 import { searchWeb as performWebSearch } from '@/lib/web-search';
 import { PersonalityMode } from '@/types';
-import { DEFAULT_MODEL_ID } from '@/lib/models';
+import { DEFAULT_MODEL_ID, FALLBACK_MODEL_IDS } from '@/lib/models';
 
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
 const OPENROUTER_API_URL = 'https://openrouter.ai/api/v1/chat/completions';
@@ -17,10 +17,13 @@ export async function POST(request: Request) {
         }
 
         const body = await request.json();
-        const { message, mode, history, model } = body; // Read model from request
+        const { message, mode, history, model } = body;
 
-        // Choose model: User selected > Env Var > Default Constant
+        // Primary model is GLM-4.5 Air, fallbacks are used if primary fails
         const selectedModel = model || process.env.OPENROUTER_MODEL || DEFAULT_MODEL_ID;
+
+        // Detect operating mode (assistant vs chat)
+        const operatingMode = detectOperatingMode(message);
 
         // 1. Check for web search triggers (expanded list for current events)
         const searchKeywords = [
@@ -36,7 +39,6 @@ export async function POST(request: Request) {
         let searchContext = '';
 
         if (shouldSearch) {
-            // Small delay to prevent rate limits on search API
             await new Promise(resolve => setTimeout(resolve, 300));
             const searchResult = await performWebSearch(message);
             if (searchResult) {
@@ -44,15 +46,12 @@ export async function POST(request: Request) {
 REAL-TIME SEARCH RESULTS (PRIORITIZE THIS DATA):
 ${searchResult}
 
-CRITICAL INSTRUCTION: The information above was retrieved in real-time from the web. 
-Use this data as the PRIMARY source for your answer. This is MORE CURRENT than your training data.
-If the search results provide an answer, use it directly and cite the source.
-Do NOT say you cannot access real-time data - the search results above ARE real-time data.`;
+CRITICAL: Use this real-time data as your PRIMARY source. Do NOT say you cannot access current data.`;
             }
         }
 
-        // 2. Prepare System Prompt
-        const baseSystemPrompt = getSystemPrompt(mode as PersonalityMode);
+        // 2. Prepare System Prompt with operating mode
+        const baseSystemPrompt = getSystemPrompt(mode as PersonalityMode, operatingMode);
         const fullSystemPrompt = searchContext
             ? `${baseSystemPrompt}\n\n${searchContext}`
             : baseSystemPrompt;
@@ -67,22 +66,40 @@ Do NOT say you cannot access real-time data - the search results above ARE real-
             { role: 'user', content: message }
         ];
 
-        // 4. Call OpenRouter API with Retry Logic
-        const response = await callOpenRouter(messages, OPENROUTER_API_KEY, selectedModel);
+        // 4. Call OpenRouter API with automatic fallback
+        const modelsToTry = [selectedModel, ...FALLBACK_MODEL_IDS.filter(m => m !== selectedModel)];
 
-        const data = await response.json();
+        let lastError: Error | null = null;
 
-        if (data.error) {
-            console.error('OpenRouter API Error:', data.error);
-            return NextResponse.json(
-                { error: `AI Error: ${data.error.message || 'Unknown error'}` },
-                { status: 500 }
-            );
+        for (const modelId of modelsToTry) {
+            try {
+                console.log(`🤖 Trying model: ${modelId}`);
+                const response = await callOpenRouter(messages, OPENROUTER_API_KEY, modelId);
+                const data = await response.json();
+
+                if (data.error) {
+                    console.warn(`Model ${modelId} error:`, data.error);
+                    lastError = new Error(data.error.message || 'Unknown error');
+                    continue; // Try next model
+                }
+
+                return NextResponse.json({
+                    response: data.choices[0].message.content,
+                    model: modelId // Return which model was used
+                });
+            } catch (e) {
+                console.warn(`Model ${modelId} failed:`, e);
+                lastError = e as Error;
+                continue; // Try next model
+            }
         }
 
-        return NextResponse.json({
-            response: data.choices[0].message.content
-        });
+        // All models failed
+        console.error('All models failed:', lastError);
+        return NextResponse.json(
+            { error: `All models unavailable: ${lastError?.message || 'Unknown error'}` },
+            { status: 500 }
+        );
 
     } catch (error) {
         console.error('Server Error:', error);
@@ -93,7 +110,12 @@ Do NOT say you cannot access real-time data - the search results above ARE real-
     }
 }
 
-async function callOpenRouter(messages: { role: string; content: string }[], apiKey: string, model: string, retries = 3): Promise<Response> {
+async function callOpenRouter(
+    messages: { role: string; content: string }[],
+    apiKey: string,
+    model: string,
+    retries = 2
+): Promise<Response> {
     for (let attempt = 1; attempt <= retries; attempt++) {
         try {
             const response = await fetch(OPENROUTER_API_URL, {
@@ -105,15 +127,14 @@ async function callOpenRouter(messages: { role: string; content: string }[], api
                     'X-Title': 'AI Personal Assistant'
                 },
                 body: JSON.stringify({
-                    model: model, // Use dynamic model
+                    model: model,
                     messages,
                     max_tokens: 1024,
-                    temperature: 0.7,
+                    temperature: 0.5, // Lower for more consistent assistant behavior
                 })
             });
 
             if (response.status === 429) {
-                // Rate limit - wait exponentially
                 const delay = Math.pow(2, attempt) * 1000;
                 console.warn(`Rate limit hit. Retrying in ${delay}ms...`);
                 await new Promise(resolve => setTimeout(resolve, delay));

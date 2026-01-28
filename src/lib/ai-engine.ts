@@ -1,14 +1,39 @@
 import { PersonalityMode, Message } from '@/types';
 import { knowledgeBase, getUserContext } from './knowledge-base';
 
+// Operating Mode detection
+export type OperatingMode = 'assistant' | 'chat';
+
 interface Intent {
-    type: 'mode_switch' | 'prompt_engineer' | 'thought_dump' | 'reset_memory' | 'help' | 'general';
+    type: 'mode_switch' | 'prompt_engineer' | 'thought_dump' | 'reset_memory' | 'help' | 'chat_mode' | 'general';
     mode?: PersonalityMode;
     data?: string;
 }
 
+export function detectOperatingMode(input: string): OperatingMode {
+    const lowerInput = input.toLowerCase().trim();
+
+    // Explicit chat mode triggers
+    const chatTriggers = [
+        'let\'s chat', 'mari ngobrol', 'chat mode', 'mode chat',
+        'just talk', 'casual talk', 'let\'s discuss', 'brainstorm with me'
+    ];
+
+    if (chatTriggers.some(trigger => lowerInput.includes(trigger))) {
+        return 'chat';
+    }
+
+    // Default: Assistant Mode
+    return 'assistant';
+}
+
 export function detectIntent(input: string): Intent {
     const lowerInput = input.toLowerCase().trim();
+
+    // Chat mode request
+    if (lowerInput.includes('chat mode') || lowerInput.includes('mode chat')) {
+        return { type: 'chat_mode' };
+    }
 
     // Mode switching
     if (lowerInput.includes('mode mentor') || lowerInput.includes('set mentor')) {
@@ -52,7 +77,36 @@ export function detectIntent(input: string): Intent {
     return { type: 'general' };
 }
 
-export function getSystemPrompt(mode: PersonalityMode): string {
+// Core Personal Assistant System Prompt (Optimized for GLM-4.5 Air)
+const PERSONAL_ASSISTANT_CORE = `You are a Personal AI Assistant. Your primary purpose is to reduce cognitive load and automate tasks for the user.
+
+IDENTITY & BEHAVIOR:
+- You are an efficient task-oriented assistant, NOT a general chatbot
+- Prioritize clarity over verbosity
+- Ask for clarification if the user's intent is ambiguous
+- Prefer actionable steps, workflows, or decisions over generic explanations
+- Acknowledge uncertainty and state limitations when necessary
+
+OPERATING MODE: ASSISTANT MODE (Default)
+- Clarify intent when needed
+- Propose clear plans or workflows
+- Execute or guide task completion
+- Be direct and actionable
+
+RESPONSE GUIDELINES (Critical):
+1. Use structured responses (bullets, numbered steps) when appropriate
+2. Keep answers concise unless deeper detail is requested
+3. Avoid unnecessary creativity; prioritize precision and usefulness
+4. Only explain reasoning if it adds value
+5. NO emojis unless specifically relevant
+
+SELF-CHECK (Before responding):
+- Is this response actionable?
+- Is more context required from the user?
+- Could this answer cause confusion if followed blindly?
+If clarification is needed, ask a focused follow-up question FIRST.`;
+
+export function getSystemPrompt(mode: PersonalityMode, operatingMode: OperatingMode = 'assistant'): string {
     const modeConfig = knowledgeBase.personality.modes[mode];
     const userContext = getUserContext();
 
@@ -64,7 +118,23 @@ export function getSystemPrompt(mode: PersonalityMode): string {
         day: 'numeric'
     });
 
-    return `${modeConfig.systemPrompt}
+    // Chat mode uses relaxed rules
+    if (operatingMode === 'chat') {
+        return `You are in CHAT MODE - casual conversation and discussion.
+${modeConfig.systemPrompt}
+
+CONTEXT:
+- Date: ${currentDate}
+- Year: ${now.getFullYear()}
+
+In chat mode, you may be more conversational, but still remain helpful and professional.`;
+    }
+
+    // Default: Assistant Mode with full system prompt
+    return `${PERSONAL_ASSISTANT_CORE}
+
+PERSONALITY OVERLAY: ${modeConfig.tone}
+${modeConfig.systemPrompt}
 
 ${userContext}
 
@@ -75,14 +145,7 @@ CONTEXT:
 PRIVACY & ETHICS:
 - Do NOT store or infer user identity/profile
 - Do NOT recall past sessions (you are stateless)
-- Do NOT simulate having a memory of the user
-- Focus ONLY on the current conversation context
-
-RULES:
-- Be concise and professional
-- No emojis in responses unless necessary for context
-- Use clean formatting (bullet points, code blocks)
-- Answer directly`;
+- Focus ONLY on the current conversation context`;
 }
 
 export function formatConversationHistory(messages: Message[]): string {
@@ -95,9 +158,13 @@ export function formatConversationHistory(messages: Message[]): string {
 }
 
 export function getHelpMessage(mode: PersonalityMode): string {
-    return `**Available Commands**
+    return `**Personal Assistant Commands**
 
-**System Modes**
+**Operating Modes**
+- Default: Assistant Mode (task-focused)
+- \`chat mode\` - Switch to casual conversation
+
+**Personality Modes**
 - \`mode mentor\` - Guided learning & advice
 - \`mode friend\` - Casual professional discussion
 - \`mode strict\` - Direct & concise
@@ -108,34 +175,36 @@ export function getHelpMessage(mode: PersonalityMode): string {
 - \`reset memory\` - Clear conversation history
 - \`help\` - Show this menu
 
-**Web Search**
-Automatically searches for news, definitions, and data when asked.`;
+**Note**: This assistant prioritizes actionable responses over generic explanations.`;
 }
 
 export function getPromptEngineerResponse(input: string): string {
     return `**Prompt Engineering**
 
-Processing your request. Please provide specifics on:
+To generate an optimized prompt, please provide:
 1. Target Role/Persona
 2. Task Description
 3. Desired Output Format`;
 }
 
 export function getThoughtDumpResponse(): string {
-    return `**Analyzing Input**
+    return `**Processing Input**
 
-Processing your text to extract key points and action items...`;
+Extracting key points and action items...`;
 }
 
 export function getModeChangeMessage(newMode: PersonalityMode): string {
-    return `System mode switched to: **${newMode.charAt(0).toUpperCase() + newMode.slice(1)}**`;
+    return `Mode switched to: **${newMode.charAt(0).toUpperCase() + newMode.slice(1)}**`;
+}
+
+export function getChatModeMessage(): string {
+    return `Switched to **Chat Mode**. I'll be more conversational now. Say "assistant mode" to return to task-focused mode.`;
 }
 
 export function getResetMemoryMessage(): string {
-    return `**System Reset**\n\nMemory cleared. Context initialized.`;
+    return `**System Reset** - Memory cleared.`;
 }
 
-// Keeping this for compatibility but it returns empty string now
 export function getModeEmoji(mode: PersonalityMode): string {
     return "";
 }

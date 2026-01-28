@@ -119,6 +119,24 @@ export function logError(
 }
 
 /**
+ * Log retrieval event (Jina AI)
+ */
+export function logRetrieval(
+    action: 'RETRIEVAL_START' | 'RETRIEVAL_SUCCESS' | 'RETRIEVAL_FAILED' | 'RETRIEVAL_TIMEOUT',
+    details: {
+        query?: string;
+        source?: string;
+        contentLength?: number;
+        processingTimeMs?: number;
+        error?: string;
+        truncated?: boolean;
+    }
+): void {
+    const level = action === 'RETRIEVAL_FAILED' || action === 'RETRIEVAL_TIMEOUT' ? 'warn' : 'info';
+    log(level, 'system', action, { data: details });
+}
+
+/**
  * Get recent logs
  */
 export function getRecentLogs(limit: number = 50, filter?: {

@@ -13,20 +13,21 @@ async function fetchCurrentLeader(query: string): Promise<SearchResult | null> {
     const lowerQuery = query.toLowerCase();
 
     // Map common queries to Wikipedia article titles
+    // IMPORTANT: Fetch the PERSON's article, not the OFFICE article, to get current info
     const leaderMappings: { patterns: string[]; articleTitle: string; lang: 'id' | 'en' }[] = [
         {
             patterns: ['presiden indonesia', 'president of indonesia', 'siapa presiden', 'indonesian president'],
-            articleTitle: 'President_of_Indonesia',
+            articleTitle: 'Prabowo_Subianto',  // Current president (since Oct 2024)
             lang: 'en'
         },
         {
             patterns: ['wakil presiden', 'vice president of indonesia'],
-            articleTitle: 'Vice_President_of_Indonesia',
+            articleTitle: 'Gibran_Rakabuming_Raka',  // Current VP (since Oct 2024)
             lang: 'en'
         },
         {
             patterns: ['gubernur jakarta', 'governor of jakarta'],
-            articleTitle: 'Governor_of_Jakarta',
+            articleTitle: 'Pramono_Anung',  // Current governor (since Oct 2024)
             lang: 'en'
         }
     ];

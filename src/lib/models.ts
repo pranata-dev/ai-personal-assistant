@@ -74,6 +74,12 @@ export function getModelPool(): Model[] {
  * Report a model failure to the Quota Guard
  */
 export function reportModelFailure(id: string, isQuotaError: boolean): void {
+  // Use aggressive retry instead of blocking for the single primary model
+  if (id === 'z-ai/glm-4.5-air:free') {
+    console.warn(`⚠️ Rate Limit/Error on Primary Model ${id}. Relying on LLM Service retry logic.`);
+    return;
+  }
+
   // We block for any 429 (Rate Limit) or Quota error
   // Even for rate limits, temporary blocking allows rotation to other models
   const blockTime = isQuotaError ? 60000 : 30000; // 1 min for quota, 30s for general errors/rate limits

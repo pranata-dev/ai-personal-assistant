@@ -19,6 +19,13 @@ export const AVAILABLE_MODELS: Model[] = [
     isFree: true,
   },
   {
+    id: 'z-ai/glm-4.5-air:free',
+    name: 'GLM 4.5 Air',
+    role: 'general',
+    description: 'Z.AI latest model, excellent for general tasks.',
+    isFree: true,
+  },
+  {
     id: 'meta-llama/llama-3.2-3b-instruct:free',
     name: 'Llama 3.2 3B',
     role: 'fast',

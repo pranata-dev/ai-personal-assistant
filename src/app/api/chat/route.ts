@@ -3,7 +3,7 @@ import { getSystemPrompt, detectOperatingMode } from '@/lib/ai-engine';
 import { PersonalityMode } from '@/types';
 import { detectRetrievalIntent, extractSearchQuery } from '@/lib/retrieval-intent';
 import { fetchFromJina, buildRetrievalContext } from '@/lib/retrieval-service';
-import { log } from '@/lib/logger';
+import { log, logError } from '@/lib/logger';
 import { callLLM } from '@/lib/llm-service';
 
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
@@ -51,6 +51,7 @@ export async function POST(request: Request) {
                 // Retrieval failed - continue without it
                 retrievalNotice = '\n\n(Note: Real-time data retrieval was attempted but unavailable. Response based on available knowledge.)';
                 console.warn(`⚠️ Jina AI retrieval failed: ${result.error}`);
+                logError('system', 'RETRIEVAL_FAILED', new Error(result.error));
             }
         }
 

@@ -5,6 +5,7 @@ import { detectRetrievalIntent, extractSearchQuery } from '@/lib/retrieval-inten
 import { fetchFromJina, buildRetrievalContext } from '@/lib/retrieval-service';
 import { log, logError } from '@/lib/logger';
 import { callLLM } from '@/lib/llm-service';
+import { DEFAULT_MODEL_ID } from '@/lib/models';
 
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
 const OPENROUTER_API_URL = 'https://openrouter.ai/api/v1/chat/completions';
@@ -72,11 +73,14 @@ export async function POST(request: Request) {
         ];
 
         // 4. Call OpenRouter API (delegated to LLM Service)
+        const finalModel = model || DEFAULT_MODEL_ID;
+        console.log(`📡 Final Model Selection: ${finalModel} (requested: ${model || 'none'})`);
+
         const result = await callLLM({
             messages,
-            model: model,
+            model: finalModel,
             temperature: 0.5,
-            timeout: 30000
+            timeout: 45000
         }, OPENROUTER_API_KEY);
 
         return NextResponse.json({

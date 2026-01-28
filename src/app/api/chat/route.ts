@@ -96,7 +96,12 @@ export async function POST(request: Request) {
         } else if (msg.toLowerCase().includes('rate limit')) {
             errorMessage = "AI service is currently busy (Rate Limit). Please try again in a few seconds.";
         } else if (msg.toLowerCase().includes('all llm models failed')) {
-            errorMessage = msg;
+            // Graceful fallback: Prevent UI crash by successful response with warning
+            return NextResponse.json({
+                response: "⚠️ *System Notice: All AI models are currently experiencing high traffic. Please try again in 1 minute.*",
+                model: 'system-fallback',
+                usedRetrieval: false
+            });
         }
 
         return NextResponse.json(

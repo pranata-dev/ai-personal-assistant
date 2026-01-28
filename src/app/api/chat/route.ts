@@ -133,6 +133,7 @@ async function callOpenRouter(
     model: string,
     retries = 3
 ): Promise<{ choices?: { message: { content: string } }[]; error?: { message: string } }> {
+    let lastMsg = 'Unknown error';
     for (let attempt = 1; attempt <= retries; attempt++) {
         try {
             console.log(`🔄 OpenRouter request to ${model} (attempt ${attempt})`);
@@ -214,6 +215,7 @@ async function callOpenRouter(
 
         } catch (e) {
             const msg = e instanceof Error ? e.message : String(e);
+            lastMsg = msg;
 
             // If it's a non-retryable error, rethrow immediately to skip retries
             if (msg.includes('quota') || msg.includes('unauthorized') || msg.includes('invalid API key')) {
@@ -230,6 +232,6 @@ async function callOpenRouter(
             await new Promise(resolve => setTimeout(resolve, delay));
         }
     }
-    throw new Error('Max retries exceeded');
+    throw new Error(`Connection failed after ${retries} attempts. Last error: ${lastMsg}`);
 }
 

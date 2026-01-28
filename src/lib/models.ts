@@ -17,14 +17,16 @@ interface BlockedModel {
 }
 
 const blockedModels = new Map<string, BlockedModel>();
-const BLOCK_DURATION_MS = 15 * 60 * 1000; // 15 minutes
+const BLOCK_DURATION_MS = 1 * 60 * 1000; // 1 minute (Reduced for free tier transient errors)
 
 // Base metadata for known models (used to populate descriptions)
 const MODEL_METADATA: Record<string, Partial<Model>> = {
-  'google/gemini-2.0-flash-lite-preview-02-05:free': { name: 'Gemini 2.0 Flash Lite', description: 'Primary AI model - Fast & Smart.' },
-  'meta-llama/llama-3.3-70b-instruct:free': { name: 'Llama 3.3 70B', description: 'Fallback model - Reliable.' },
+  'google/gemini-2.0-flash-lite-preview-02-05:free': { name: 'Gemini 2.0 Flash Lite', description: 'Primary AI model - Fastest.' },
+  'meta-llama/llama-3.3-70b-instruct:free': { name: 'Llama 3.3 70B', description: 'Fallback model - Smartest.' },
   'deepseek/deepseek-r1-distill-llama-70b:free': { name: 'DeepSeek R1', description: 'Fallback model - Reasoning.' },
-  'qwen/qwen-2.5-72b-instruct:free': { name: 'Qwen 2.5 72B', description: 'Fallback model - Backup.' },
+  'qwen/qwen-2.5-72b-instruct:free': { name: 'Qwen 2.5 72B', description: 'Fallback model - Alternative.' },
+  'microsoft/phi-3-medium-128k-instruct:free': { name: 'Phi-3 Medium', description: 'Fallback model - High Availability.' },
+  'meta-llama/llama-3.2-11b-vision-instruct:free': { name: 'Llama 3.2 11B', description: 'Fallback model - Lightweight.' },
 };
 
 /**
@@ -42,7 +44,9 @@ export function getModelPool(): Model[] {
     'google/gemini-2.0-flash-lite-preview-02-05:free',
     'meta-llama/llama-3.3-70b-instruct:free',
     'deepseek/deepseek-r1-distill-llama-70b:free',
-    'qwen/qwen-2.5-72b-instruct:free'
+    'qwen/qwen-2.5-72b-instruct:free',
+    'microsoft/phi-3-medium-128k-instruct:free',
+    'meta-llama/llama-3.2-11b-vision-instruct:free'
   ];
 
   // 2. Filter & Map
@@ -77,7 +81,7 @@ export function getModelPool(): Model[] {
 /**
  * Report a model failure to the Quota Guard
  * @param id Model ID
- * @param isQuotaError If true, blocks model for 15 minutes
+ * @param isQuotaError If true, blocks model for BLOCK_DURATION_MS
  */
 export function reportModelFailure(id: string, isQuotaError: boolean): void {
   if (isQuotaError) {
@@ -87,7 +91,7 @@ export function reportModelFailure(id: string, isQuotaError: boolean): void {
       reason: 'Quota/Spend Limit Exceeded',
       expiresAt: Date.now() + BLOCK_DURATION_MS
     });
-    console.warn(`🚫 QUOTA GUARD: Blocked ${id} for 15 minutes.`);
+    console.warn(`🚫 QUOTA GUARD: Blocked ${id} for ${(BLOCK_DURATION_MS / 1000).toFixed(0)}s.`);
   }
 }
 

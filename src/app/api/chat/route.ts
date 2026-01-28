@@ -122,11 +122,15 @@ async function callOpenRouter(
     messages: { role: string; content: string }[],
     apiKey: string,
     model: string,
-    retries = 2
+    retries = 3
 ): Promise<{ choices?: { message: { content: string } }[]; error?: { message: string } }> {
     for (let attempt = 1; attempt <= retries; attempt++) {
         try {
             console.log(`🔄 OpenRouter request to ${model} (attempt ${attempt})`);
+
+            // 15 second timeout for LLM generation
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 15000);
 
             const response = await fetch(OPENROUTER_API_URL, {
                 method: 'POST',
@@ -141,8 +145,11 @@ async function callOpenRouter(
                     messages,
                     max_tokens: 1024,
                     temperature: 0.5,
-                })
+                }),
+                signal: controller.signal
             });
+
+            clearTimeout(timeoutId);
 
             // Handle rate limiting
             if (response.status === 429) {

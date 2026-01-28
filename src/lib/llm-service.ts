@@ -33,8 +33,8 @@ export interface LLMError {
     modelAttempted: string;
 }
 
-// Timeout default: 30 seconds
-const DEFAULT_TIMEOUT_MS = 30000;
+// Timeout default: 45 seconds (increased for free tier models)
+const DEFAULT_TIMEOUT_MS = 45000;
 
 /**
  * Call the LLM with automatic fallback
@@ -106,10 +106,11 @@ export async function callLLM(
 
             console.warn(`❌ Model ${modelId} failed: ${errorMessage}`);
 
-            // Smart Backoff: Delay before next model (helps with rate limits)
+            // Exponential Backoff: Delay before next model (helps with rate limits)
             if (i < modelsToTry.length - 1) {
-                console.log('⏳ Waiting 2s before trying fallback model...');
-                await new Promise(resolve => setTimeout(resolve, 2000));
+                const backoffMs = Math.min(1000 * Math.pow(2, i), 10000);
+                console.log(`⏳ Waiting ${backoffMs}ms before trying fallback model...`);
+                await new Promise(resolve => setTimeout(resolve, backoffMs));
             }
 
             // Continue to next model
@@ -158,6 +159,10 @@ async function callSingleModel(
 
         if (response.status === 429) {
             throw new Error('Rate limit exceeded');
+        }
+
+        if (response.status === 502 || response.status === 503) {
+            throw new Error('No endpoints available (Service Unavailable)');
         }
 
         if (!response.ok) {

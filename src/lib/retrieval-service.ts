@@ -35,6 +35,17 @@ export interface RetrievalResult {
 export async function fetchFromJina(query: string): Promise<RetrievalResult> {
     const startTime = Date.now();
 
+    if (!process.env.JINA_API_KEY) {
+        log('warn', 'system', 'RETRIEVAL_SKIPPED', { data: { reason: 'JINA_API_KEY missing' } });
+        return {
+            success: false,
+            content: '',
+            truncated: false,
+            processingTimeMs: 0,
+            error: 'Jina API Key missing'
+        };
+    }
+
     try {
         log('info', 'system', 'RETRIEVAL_START', {
             data: { query, service: 'jina-search' }
@@ -48,10 +59,8 @@ export async function fetchFromJina(query: string): Promise<RetrievalResult> {
             method: 'GET',
             headers: {
                 'Accept': 'text/plain',
-                'X-No-Cache': 'true', // Get fresh results
-                ...(process.env.JINA_API_KEY && {
-                    'Authorization': `Bearer ${process.env.JINA_API_KEY}`
-                })
+                'X-No-Cache': 'true',
+                'Authorization': `Bearer ${process.env.JINA_API_KEY}`
             },
             signal: controller.signal
         });
@@ -125,6 +134,18 @@ export async function fetchFromJina(query: string): Promise<RetrievalResult> {
 export async function fetchUrlContent(url: string): Promise<RetrievalResult> {
     const startTime = Date.now();
 
+    if (!process.env.JINA_API_KEY) {
+        log('warn', 'system', 'RETRIEVAL_SKIPPED', { data: { reason: 'JINA_API_KEY missing' } });
+        return {
+            success: false,
+            content: '',
+            truncated: false,
+            processingTimeMs: 0,
+            source: url,
+            error: 'Jina API Key missing'
+        };
+    }
+
     try {
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), RETRIEVAL_TIMEOUT_MS);
@@ -133,9 +154,7 @@ export async function fetchUrlContent(url: string): Promise<RetrievalResult> {
             method: 'GET',
             headers: {
                 'Accept': 'text/plain',
-                ...(process.env.JINA_API_KEY && {
-                    'Authorization': `Bearer ${process.env.JINA_API_KEY}`
-                })
+                'Authorization': `Bearer ${process.env.JINA_API_KEY}`
             },
             signal: controller.signal
         });

@@ -41,16 +41,16 @@ export async function POST(request: Request) {
             // Extract optimized search query
             const searchQuery = extractSearchQuery(message);
 
-            // Fetch from Jina AI
+            // Fetch from Web Search
             const result = await fetchFromJina(searchQuery);
 
             if (result.success) {
                 retrievalContext = buildRetrievalContext(result);
-                console.log(`✅ Jina AI retrieval successful (${result.content.length} chars, ${result.processingTimeMs}ms)`);
+                console.log(`✅ Web Search retrieval successful (${result.content.length} chars, ${result.processingTimeMs}ms)`);
             } else {
                 // Retrieval failed - continue without it
                 retrievalNotice = '\n\n(Note: Real-time data retrieval was attempted but unavailable. Response based on available knowledge.)';
-                console.warn(`⚠️ Jina AI retrieval failed: ${result.error}`);
+                console.warn(`⚠️ Web Search retrieval failed: ${result.error}`);
                 logError('system', 'RETRIEVAL_FAILED', new Error(result.error));
             }
         }

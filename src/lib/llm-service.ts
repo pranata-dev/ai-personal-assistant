@@ -106,11 +106,27 @@ export async function callLLM(
 
             console.warn(`❌ Model ${modelId} failed: ${errorMessage}`);
 
-            // Exponential Backoff: Delay before next model (helps with rate limits)
+            // Smart Backoff & Failover (helps with rate limits vs outages)
             if (i < modelsToTry.length - 1) {
-                const backoffMs = Math.min(1000 * Math.pow(2, i), 10000);
-                console.log(`⏳ Waiting ${backoffMs}ms before trying fallback model...`);
-                await new Promise(resolve => setTimeout(resolve, backoffMs));
+                const isRateLimit = errorMessage.toLowerCase().includes('rate limit') ||
+                    errorMessage.includes('429');
+                const isOutage = errorMessage.toLowerCase().includes('no endpoints') ||
+                    errorMessage.includes('502') ||
+                    errorMessage.includes('503');
+
+                if (isRateLimit) {
+                    const backoffMs = Math.min(1000 * Math.pow(2, i), 10000);
+                    console.log(`⚠️ Switching model due to Rate Limit (waiting ${backoffMs}ms)...`);
+                    await new Promise(resolve => setTimeout(resolve, backoffMs));
+                } else if (isOutage) {
+                    console.log(`⚠️ Switching model due to Outage (immediate failover)...`);
+                    // Skip wait for immediate failover on known outages
+                } else {
+                    // Default backoff for unknown errors
+                    const backoffMs = Math.min(1000 * Math.pow(2, i), 10000);
+                    console.log(`⏳ Waiting ${backoffMs}ms before trying fallback model...`);
+                    await new Promise(resolve => setTimeout(resolve, backoffMs));
+                }
             }
 
             // Continue to next model

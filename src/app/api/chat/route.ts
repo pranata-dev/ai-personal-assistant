@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getSystemPrompt, detectOperatingMode } from '@/lib/ai-engine';
 import { PersonalityMode } from '@/types';
-import { DEFAULT_MODEL_ID, FALLBACK_MODEL_IDS } from '@/lib/models';
+import { getModelPool, reportModelFailure } from '@/lib/models';
 import { detectRetrievalIntent, extractSearchQuery } from '@/lib/retrieval-intent';
 import { fetchFromJina, buildRetrievalContext } from '@/lib/retrieval-service';
 import { log } from '@/lib/logger';
@@ -19,10 +19,10 @@ export async function POST(request: Request) {
         }
 
         const body = await request.json();
-        const { message, mode, history, model } = body;
+        const { message, mode, history } = body;
 
-        // Primary model is GLM-4.5 Air, fallbacks are used if primary fails
-        const selectedModel = model || process.env.OPENROUTER_MODEL || DEFAULT_MODEL_ID;
+        // Get prioritized model pool (filters out blocked/quota-exceeded models)
+        const modelPool = getModelPool();
 
         // Detect operating mode (assistant vs chat)
         const operatingMode = detectOperatingMode(message);
@@ -73,49 +73,72 @@ export async function POST(request: Request) {
             { role: 'user', content: message }
         ];
 
-        // 4. Call OpenRouter API with automatic fallback
-        const modelsToTry = [selectedModel, ...FALLBACK_MODEL_IDS.filter(m => m !== selectedModel)];
-
+        // 4. Call OpenRouter API with Model Rotation
         let lastError: Error | null = null;
+        let successfulResponse: any = null;
+        let usedModelId = '';
 
-        for (const modelId of modelsToTry) {
+        for (const model of modelPool) {
+            const modelId = model.id;
             try {
-                console.log(`🤖 Trying model: ${modelId}`);
+                console.log(`🤖 Trying model from pool: ${modelId}`);
+
                 const data = await callOpenRouter(messages, OPENROUTER_API_KEY, modelId);
 
                 // Check for valid response
                 if (!data.choices || !data.choices[0]?.message?.content) {
                     console.warn(`Model ${modelId} returned empty response`);
-                    lastError = new Error('Empty response from model');
-                    continue;
+                    throw new Error('Empty response from model');
                 }
 
-                return NextResponse.json({
-                    response: data.choices[0].message.content + retrievalNotice,
-                    model: modelId,
-                    usedRetrieval: retrievalIntent.shouldRetrieve && retrievalContext !== ''
-                });
-            } catch (e) {
-                console.warn(`Model ${modelId} failed:`, e);
-                lastError = e as Error;
+                successfulResponse = data;
+                usedModelId = modelId;
+                break; // Success!
 
-                // If it's a quota error, we might still want to try other models *if* they are from different providers 
-                // or if some are free vs paid. But if all fail, we need the specific error.
+            } catch (e) {
+                const error = e as Error;
+                console.warn(`Model ${modelId} failed:`, error.message);
+                lastError = error;
+
+                // Check for Quota/Billing errors
+                const isQuotaError = error.message.includes('quota') ||
+                    error.message.includes('billing') ||
+                    error.message.includes('credit') ||
+                    error.message.includes('unauthorized') || // 401
+                    error.message.includes('invalid API key');
+
+                // Report failure to Quota Guard (blocks model if quota error)
+                reportModelFailure(modelId, isQuotaError);
+
                 continue; // Try next model
             }
         }
 
-        // All models failed
-        console.error('All models failed:', lastError);
+        if (successfulResponse) {
+            return NextResponse.json({
+                response: successfulResponse.choices[0].message.content + retrievalNotice,
+                model: usedModelId,
+                usedRetrieval: retrievalIntent.shouldRetrieve && retrievalContext !== ''
+            });
+        }
 
-        let errorMessage = `All models unavailable: ${lastError?.message || 'Unknown error'}`;
-        if (lastError?.message?.includes('quota exceeded')) {
+        // All models failed
+        console.error('All models failed. Last error:', lastError);
+
+        let errorMessage = "AI service is temporarily unavailable. Please try again later.";
+
+        // If pool was empty (all blocked) or last error was quota
+        if (modelPool.length === 0) {
+            errorMessage = "All AI models are currently unavailable due to quota limits. Please try again in 15 minutes.";
+        } else if (lastError?.message?.includes('quota exceeded') || lastError?.message?.includes('AI service quota exceeded')) {
             errorMessage = "AI service quota exceeded. Please try again later or check API limits.";
+        } else if (lastError) {
+            errorMessage = `All models unavailable: ${lastError.message}`;
         }
 
         return NextResponse.json(
             { error: errorMessage },
-            { status: 500 }
+            { status: 503 }
         );
 
     } catch (error) {

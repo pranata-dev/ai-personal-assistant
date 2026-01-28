@@ -22,8 +22,14 @@ export async function POST(request: Request) {
         // Choose model: User selected > Env Var > Default Constant
         const selectedModel = model || process.env.OPENROUTER_MODEL || DEFAULT_MODEL_ID;
 
-        // 1. Check for web search triggers
-        const searchKeywords = ['berita', 'news', 'apa itu', 'siapa', 'cari', 'presiden', 'gubernur', 'cuaca', 'harga', 'jadwal', 'timnas', 'skor', 'gempa', 'banjir', 'traffic', 'macet', 'wik'];
+        // 1. Check for web search triggers (expanded list for current events)
+        const searchKeywords = [
+            'berita', 'news', 'apa itu', 'siapa', 'cari', 'presiden', 'gubernur',
+            'cuaca', 'harga', 'jadwal', 'timnas', 'skor', 'gempa', 'banjir',
+            'traffic', 'macet', 'wik', 'current', 'sekarang', 'saat ini',
+            'terbaru', 'latest', 'today', 'hari ini', 'menteri', 'minister',
+            'who is', 'what is', 'when did', 'kapan'
+        ];
         const lowerMessage = message.toLowerCase();
         const shouldSearch = searchKeywords.some(keyword => lowerMessage.includes(keyword));
 
@@ -31,14 +37,17 @@ export async function POST(request: Request) {
 
         if (shouldSearch) {
             // Small delay to prevent rate limits on search API
-            await new Promise(resolve => setTimeout(resolve, 500));
+            await new Promise(resolve => setTimeout(resolve, 300));
             const searchResult = await performWebSearch(message);
             if (searchResult) {
                 searchContext = `
-WEB SEARCH RESULTS:
+REAL-TIME SEARCH RESULTS (PRIORITIZE THIS DATA):
 ${searchResult}
 
-INSTRUCTION: Use the above search results to answer the user's question accurately. Citation included.`;
+CRITICAL INSTRUCTION: The information above was retrieved in real-time from the web. 
+Use this data as the PRIMARY source for your answer. This is MORE CURRENT than your training data.
+If the search results provide an answer, use it directly and cite the source.
+Do NOT say you cannot access real-time data - the search results above ARE real-time data.`;
             }
         }
 

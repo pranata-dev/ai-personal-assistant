@@ -1,12 +1,92 @@
-// Web search using Wikipedia REST API (most reliable free option)
+// Enhanced Web Search using DuckDuckGo Instant Answers + Wikipedia
+// DuckDuckGo for quick facts, Wikipedia for encyclopedic knowledge
 
 interface SearchResult {
     title: string;
     snippet: string;
     url: string;
+    source: 'duckduckgo' | 'wikipedia';
 }
 
-// Wikipedia Search API - works reliably!
+// DuckDuckGo Instant Answer API - Great for quick facts & current info
+async function searchDuckDuckGo(query: string): Promise<SearchResult | null> {
+    try {
+        const encodedQuery = encodeURIComponent(query);
+        console.log('🦆 DuckDuckGo search for:', query);
+
+        const response = await fetch(
+            `https://api.duckduckgo.com/?q=${encodedQuery}&format=json&no_html=1&skip_disambig=1`,
+            {
+                headers: {
+                    'User-Agent': 'AIAssistant/1.0'
+                }
+            }
+        );
+
+        if (!response.ok) return null;
+
+        const data = await response.json();
+
+        // Check Abstract (main answer)
+        if (data.Abstract && data.Abstract.length > 50) {
+            console.log('✅ DuckDuckGo Abstract found:', data.Heading);
+            return {
+                title: data.Heading || query,
+                snippet: data.Abstract,
+                url: data.AbstractURL || '',
+                source: 'duckduckgo'
+            };
+        }
+
+        // Check Answer (quick facts like "Who is the president of...")
+        if (data.Answer && data.Answer.length > 10) {
+            console.log('✅ DuckDuckGo Answer found');
+            return {
+                title: data.AnswerType || 'Quick Answer',
+                snippet: data.Answer,
+                url: '',
+                source: 'duckduckgo'
+            };
+        }
+
+        // Check Infobox (structured data)
+        if (data.Infobox?.content?.length > 0) {
+            const infoLines = data.Infobox.content
+                .slice(0, 5)
+                .map((item: { label: string; value: string }) => `${item.label}: ${item.value}`)
+                .join('\n');
+            if (infoLines) {
+                console.log('✅ DuckDuckGo Infobox found');
+                return {
+                    title: data.Heading || query,
+                    snippet: infoLines,
+                    url: data.AbstractURL || '',
+                    source: 'duckduckgo'
+                };
+            }
+        }
+
+        // Check Related Topics for quick definitions
+        if (data.RelatedTopics?.length > 0 && data.RelatedTopics[0]?.Text) {
+            const firstTopic = data.RelatedTopics[0];
+            console.log('✅ DuckDuckGo Related Topic found');
+            return {
+                title: firstTopic.FirstURL?.split('/').pop()?.replace(/_/g, ' ') || query,
+                snippet: firstTopic.Text,
+                url: firstTopic.FirstURL || '',
+                source: 'duckduckgo'
+            };
+        }
+
+        console.log('❌ DuckDuckGo: No relevant instant answer');
+        return null;
+    } catch (error) {
+        console.error('DuckDuckGo search error:', error);
+        return null;
+    }
+}
+
+// Wikipedia Search API - works reliably for encyclopedic content
 async function searchWikipedia(query: string): Promise<SearchResult[]> {
     try {
         // Clean query
@@ -69,7 +149,8 @@ async function fetchWikipediaSummary(query: string, lang: 'id' | 'en'): Promise<
             return [{
                 title: data.title || query,
                 snippet: data.extract,
-                url: data.content_urls?.desktop?.page || ''
+                url: data.content_urls?.desktop?.page || '',
+                source: 'wikipedia'
             }];
         }
         return [];
@@ -104,7 +185,8 @@ async function searchWikipediaAPI(query: string): Promise<SearchResult[]> {
                 results.push({
                     title: item.title,
                     snippet: cleanSnippet,
-                    url: `https://en.wikipedia.org/wiki/${encodeURIComponent(item.title.replace(/ /g, '_'))}`
+                    url: `https://en.wikipedia.org/wiki/${encodeURIComponent(item.title.replace(/ /g, '_'))}`,
+                    source: 'wikipedia'
                 });
             }
             console.log(`✅ Wikipedia search found ${results.length} results`);
@@ -117,51 +199,45 @@ async function searchWikipediaAPI(query: string): Promise<SearchResult[]> {
     }
 }
 
-export async function searchWeb(query: string): Promise<SearchResult[]> {
-    console.log('🔍 Starting web search for:', query);
+// Main search function - tries DuckDuckGo first for quick facts, then Wikipedia
+export async function searchWeb(query: string): Promise<string> {
+    console.log('🔍 Starting enhanced web search for:', query);
 
-    const results = await searchWikipedia(query);
-
-    if (results.length > 0) {
-        return results;
+    // 1. Try DuckDuckGo for instant answers (fast & current)
+    const ddgResult = await searchDuckDuckGo(query);
+    if (ddgResult) {
+        return formatSingleResult(ddgResult);
     }
 
-    console.log('❌ No search results found');
-    return [];
+    // 2. Fallback to Wikipedia (reliable encyclopedic content)
+    const wikiResults = await searchWikipedia(query);
+    if (wikiResults.length > 0) {
+        return formatSingleResult(wikiResults[0]);
+    }
+
+    console.log('❌ No search results found from any source');
+    return '';
+}
+
+function formatSingleResult(result: SearchResult): string {
+    let formatted = `SOURCE: ${result.source.toUpperCase()}\n`;
+    formatted += `TITLE: ${result.title}\n`;
+    formatted += `CONTENT: ${result.snippet}\n`;
+    if (result.url) {
+        formatted += `URL: ${result.url}\n`;
+    }
+    return formatted;
 }
 
 export function shouldSearch(message: string): boolean {
     const searchTriggers = [
-        'berita',
-        'news',
-        'terbaru',
-        'latest',
-        'hari ini',
-        'today',
-        'update',
-        'search',
-        'cari',
-        'carikan',
-        'google',
-        'info tentang',
-        'apa itu',
-        'what is',
-        'who is',
-        'siapa itu',
-        'siapa',
-        'kapan',
-        'when did',
-        'how to',
-        'cara',
-        'bagaimana',
-        'harga',
-        'price',
-        'cuaca',
-        'weather',
-        'jelaskan',
-        'explain',
-        'presiden',
-        'president'
+        'berita', 'news', 'terbaru', 'latest', 'hari ini', 'today', 'update',
+        'search', 'cari', 'carikan', 'google', 'info tentang',
+        'apa itu', 'what is', 'who is', 'siapa itu', 'siapa',
+        'kapan', 'when did', 'how to', 'cara', 'bagaimana',
+        'harga', 'price', 'cuaca', 'weather', 'jelaskan', 'explain',
+        'presiden', 'president', 'current', 'sekarang', 'saat ini',
+        'terbaru', 'newest', 'gubernur', 'governor', 'menteri', 'minister'
     ];
 
     const lowerMessage = message.toLowerCase();
@@ -181,7 +257,7 @@ export function formatSearchResults(results: SearchResult[]): string {
 
     let formatted = '\n\n**Web Search Results:**\n';
     for (const result of results) {
-        formatted += `\n**${result.title}**\n${result.snippet.slice(0, 300)}${result.snippet.length > 300 ? '...' : ''}\n`;
+        formatted += `\n**${result.title}** _(${result.source})_\n${result.snippet.slice(0, 300)}${result.snippet.length > 300 ? '...' : ''}\n`;
         if (result.url) {
             formatted += `Source: ${result.url}\n`;
         }

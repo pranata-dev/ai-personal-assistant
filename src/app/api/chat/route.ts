@@ -39,14 +39,27 @@ export async function POST(request: Request) {
         let searchContext = '';
 
         if (shouldSearch) {
-            await new Promise(resolve => setTimeout(resolve, 300));
-            const searchResult = await performWebSearch(message);
-            if (searchResult) {
-                searchContext = `
-REAL-TIME SEARCH RESULTS (PRIORITIZE THIS DATA):
-${searchResult}
+            try {
+                // Timeout web search after 5 seconds
+                const searchPromise = performWebSearch(message);
+                const timeoutPromise = new Promise<null>((_, reject) =>
+                    setTimeout(() => reject(new Error('Search timeout')), 5000)
+                );
 
-CRITICAL: Use this real-time data as your PRIMARY source. Do NOT say you cannot access current data.`;
+                const searchResult = await Promise.race([searchPromise, timeoutPromise]).catch(() => null);
+
+                if (searchResult) {
+                    // Limit search context to 1500 characters to avoid token limits
+                    const limitedResult = searchResult.substring(0, 1500);
+                    searchContext = `
+REAL-TIME SEARCH RESULTS:
+${limitedResult}
+
+Use this data as your PRIMARY source.`;
+                }
+            } catch (e) {
+                console.warn('Web search failed:', e);
+                // Continue without search context
             }
         }
 

@@ -26,17 +26,31 @@ export const AVAILABLE_MODELS: Model[] = [
     isFree: true,
   },
   {
-    id: 'meta-llama/llama-3.2-3b-instruct:free',
-    name: 'Llama 3.2 3B',
+    id: 'deepseek/deepseek-r1-0528:free',
+    name: 'DeepSeek R1',
     role: 'fallback',
-    description: 'Fallback model - lightweight and fast.',
+    description: 'Fallback model - excellent reasoning.',
     isFree: true,
   },
   {
-    id: 'google/gemma-3-4b-it:free',
-    name: 'Gemma 3 4B',
+    id: 'mistralai/mistral-small-3.1-24b-instruct:free',
+    name: 'Mistral Small 3.1',
+    role: 'fallback',
+    description: 'Fallback model - fast and reliable.',
+    isFree: true,
+  },
+  {
+    id: 'google/gemma-3-27b-it:free',
+    name: 'Gemma 3 27B',
     role: 'fallback',
     description: 'Fallback model - Google compact model.',
+    isFree: true,
+  },
+  {
+    id: 'qwen/qwen3-32b:free',
+    name: 'Qwen3 32B',
+    role: 'fallback',
+    description: 'Fallback model - Alibaba model.',
     isFree: true,
   },
 ];
@@ -44,11 +58,13 @@ export const AVAILABLE_MODELS: Model[] = [
 // PRIMARY MODEL - GLM-4.5 Air
 export const DEFAULT_MODEL_ID = 'z-ai/glm-4.5-air:free';
 
-// Fallback order when primary fails
+// Fallback order when primary fails (more models for reliability)
 export const FALLBACK_MODEL_IDS = [
   'meta-llama/llama-3.3-70b-instruct:free',
-  'meta-llama/llama-3.2-3b-instruct:free',
-  'google/gemma-3-4b-it:free',
+  'deepseek/deepseek-r1-0528:free',
+  'mistralai/mistral-small-3.1-24b-instruct:free',
+  'google/gemma-3-27b-it:free',
+  'qwen/qwen3-32b:free',
 ];
 
 export function getModelById(id: string): Model | undefined {

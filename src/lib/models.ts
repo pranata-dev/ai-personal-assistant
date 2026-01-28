@@ -17,14 +17,17 @@ interface BlockedModel {
 }
 
 const blockedModels = new Map<string, BlockedModel>();
-const BLOCK_DURATION_MS = 1 * 60 * 1000; // 1 minute (Reduced for free tier transient errors)
+const BLOCK_DURATION_MS = 10000; // 10 seconds (Reduced for transient free tier errors)
 
 // Base metadata for known models (used to populate descriptions)
 const MODEL_METADATA: Record<string, Partial<Model>> = {
   'google/gemini-2.0-flash-lite-preview-02-05:free': { name: 'Gemini 2.0 Flash Lite', description: 'Primary AI model - Fastest.' },
+  'google/gemini-2.0-pro-exp-02-05:free': { name: 'Gemini 2.0 Pro', description: 'Fallback model - High Quality Reasoning.' },
   'meta-llama/llama-3.3-70b-instruct:free': { name: 'Llama 3.3 70B', description: 'Fallback model - Smartest.' },
   'deepseek/deepseek-r1-distill-llama-70b:free': { name: 'DeepSeek R1', description: 'Fallback model - Reasoning.' },
   'qwen/qwen-2.5-72b-instruct:free': { name: 'Qwen 2.5 72B', description: 'Fallback model - Alternative.' },
+  'liquid/lfm-40b:free': { name: 'Liquid LFM 40B', description: 'Fallback model - Generalist.' },
+  'sophosympatheia/midnight-rose-70b:free': { name: 'Midnight Rose 70B', description: 'Fallback model - Creative.' },
   'microsoft/phi-3-medium-128k-instruct:free': { name: 'Phi-3 Medium', description: 'Fallback model - High Availability.' },
   'meta-llama/llama-3.2-11b-vision-instruct:free': { name: 'Llama 3.2 11B', description: 'Fallback model - Lightweight.' },
 };
@@ -42,9 +45,12 @@ export function getModelPool(): Model[] {
   // Default list if env is empty (Prioritize FREE models)
   const modelIds = rawList.length > 0 ? rawList : [
     'google/gemini-2.0-flash-lite-preview-02-05:free',
+    'google/gemini-2.0-pro-exp-02-05:free',
     'meta-llama/llama-3.3-70b-instruct:free',
     'deepseek/deepseek-r1-distill-llama-70b:free',
     'qwen/qwen-2.5-72b-instruct:free',
+    'liquid/lfm-40b:free',
+    'sophosympatheia/midnight-rose-70b:free',
     'microsoft/phi-3-medium-128k-instruct:free',
     'meta-llama/llama-3.2-11b-vision-instruct:free'
   ];

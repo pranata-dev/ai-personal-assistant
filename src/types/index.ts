@@ -1,6 +1,14 @@
 export type PersonalityMode = 'mentor' | 'bestfriend' | 'strict' | 'chaos';
 export type ExplanationStyle = 'simple' | 'technical' | 'analogy';
 
+export interface Model {
+  id: string;
+  name: string;
+  role: 'primary' | 'fallback';
+  description: string;
+  isFree: boolean;
+}
+
 export interface Message {
   id: string;
   role: 'user' | 'assistant';

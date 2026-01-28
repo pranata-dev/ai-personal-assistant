@@ -90,17 +90,7 @@ async function processWhatsAppMessage(rawMessage: RawWhatsAppMessage) {
             OPENROUTER_API_KEY
         );
 
-        // Log fallback if used
-        if (llmResponse.fallbackUsed) {
-            logFallbackEvent({
-                primaryModel: messages[0]?.content?.includes('GLM') ? 'z-ai/glm-4.5-air:free' : 'unknown',
-                fallbackModel: llmResponse.modelUsed,
-                reason: determineFallbackReason(llmResponse.fallbackReason || 'unknown'),
-                errorDetails: llmResponse.fallbackReason,
-                sessionId: normalizedMessage.sessionId,
-                channel: 'whatsapp'
-            });
-        }
+        // Fallback logging removed (Single Model Policy)
 
         // Check for potential hallucination
         if (detectPotentialHallucination(llmResponse.content)) {

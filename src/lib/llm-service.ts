@@ -1,18 +1,17 @@
 /**
- * LLM Service
+ * LLM Service (Strict Single Model)
  * 
- * Encapsulates all LLM API interactions.
- * Primary model: GLM 4.5 Air
- * Single-core inference with automatic fallback.
+ * Exclusively uses GLM 4.5 Air with a Persistent Retry Queue.
+ * No fallbacks, no model switching. Just patient retrying.
  */
 
-import { reportModelFailure } from './models';
+import { PRIMARY_MODEL_ID } from './models';
 
 const OPENROUTER_API_URL = 'https://openrouter.ai/api/v1/chat/completions';
 
 export interface LLMRequest {
     messages: Array<{ role: string; content: string }>;
-    model?: string;
+    model?: string; // Ignored, always uses PRIMARY
     temperature?: number;
     maxTokens?: number;
     timeout?: number;
@@ -22,114 +21,83 @@ export interface LLMResponse {
     content: string;
     modelUsed: string;
     fallbackUsed: boolean;
-    fallbackReason?: string;
     tokensUsed?: number;
     processingTimeMs: number;
 }
 
-export interface LLMError {
-    code: string;
-    message: string;
-    modelAttempted: string;
-}
+// Max 50 retries * 10s = ~8.3 minutes of patience
+const MAX_RETRIES = 50;
+const RETRY_CAP_MS = 10000; // Max wait between retries
+const GLOBAL_TIMEOUT_MS = 600000; // 10 minutes
 
-// Timeout default: 45 seconds (increased for free tier models)
-const DEFAULT_TIMEOUT_MS = 45000;
-
-/**
- * Call the LLM with automatic fallback
- */
 export async function callLLM(
     request: LLMRequest,
     apiKey: string
 ): Promise<LLMResponse> {
     const startTime = Date.now();
+    const modelId = PRIMARY_MODEL_ID;
 
-    // STRICT SINGLE MODEL POLICY
-    const modelId = 'z-ai/glm-4.5-air:free';
-    // Massive timeout to accommodate long queues (10 mins)
-    const timeout = request.timeout || 600000;
-
-    let lastError: LLMError | null = null;
-    const MAX_RETRIES = 50; // Persistent Queue: ~8 minutes
-
-    // Capped backoff (max 10s wait)
-    // 2s, 4s, 8s, 10s, 10s, 10s ...
-    const getBackoff = (attempt: number) => Math.min(1000 * Math.pow(2, attempt + 1), 10000);
+    console.log(`🚀 Starting Request: ${modelId}`);
 
     for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
         try {
-            console.log(`🤖 LLM Request (Attempt ${attempt + 1}/${MAX_RETRIES}): ${modelId}`);
+            if (attempt > 0) {
+                console.log(`🔄 Retry Attempt ${attempt}/${MAX_RETRIES} for ${modelId}...`);
+            }
 
-            const response = await callSingleModel(
+            const response = await callOpenRouterAPI(
                 modelId,
                 request.messages,
                 apiKey,
                 request.temperature ?? 0.5,
-                request.maxTokens ?? 1024,
-                timeout
+                request.maxTokens ?? 1024
             );
 
             const processingTimeMs = Date.now() - startTime;
-
             return {
                 content: response.content,
                 modelUsed: modelId,
-                fallbackUsed: false,
+                fallbackUsed: false, // Concept no longer exists
                 tokensUsed: response.tokensUsed,
                 processingTimeMs
             };
 
         } catch (error) {
-            const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-            lastError = {
-                code: 'LLM_ERROR',
-                message: errorMessage,
-                modelAttempted: modelId
-            };
+            const msg = error instanceof Error ? error.message : String(error);
+            const isRateLimit = msg.toLowerCase().includes('rate limit') || msg.includes('429');
+            const isServerBusy = msg.includes('502') || msg.includes('503') || msg.includes('fetch failed');
 
-            const isRateLimit = errorMessage.toLowerCase().includes('rate limit') ||
-                errorMessage.includes('429');
+            // Permanent errors (Auth, Bad Request) -> Fail immediately
+            if (!isRateLimit && !isServerBusy) {
+                console.error(`❌ Permanent Error: ${msg}`);
+                throw error;
+            }
 
-            // Only retry on Rate Limits or temporary server errors (502/503)
-            const isRetryable = isRateLimit ||
-                errorMessage.includes('502') ||
-                errorMessage.includes('503') ||
-                errorMessage.includes('fetch failed');
-
-            if (isRetryable && attempt < MAX_RETRIES) {
-                const backoffMs = getBackoff(attempt);
-                console.warn(`⚠️ Attempt ${attempt + 1} failed: ${errorMessage}`);
-                console.warn(`⏳ Waiting ${backoffMs / 1000}s before retry...`);
-
-                await new Promise(resolve => setTimeout(resolve, backoffMs));
+            // Retryable errors
+            if (attempt < MAX_RETRIES) {
+                // Backoff: 2s, 4s, 8s, 10s...
+                const backoff = Math.min(1000 * Math.pow(2, attempt + 1), RETRY_CAP_MS);
+                console.warn(`⚠️ Error: ${msg}. Waiting ${backoff / 1000}s...`);
+                await new Promise(r => setTimeout(r, backoff));
                 continue;
             }
 
-            // If not retryable or max retries reached, throw
-            console.error(`❌ Model ${modelId} failed permanently: ${errorMessage}`);
-            break;
+            throw new Error(`Failed after ${MAX_RETRIES} attempts. Last error: ${msg}`);
         }
     }
 
-    // All retries failed
-    throw new Error(`LLM Failed after ${MAX_RETRIES + 1} attempts. Last error: ${lastError?.message || 'Unknown'}`);
+    throw new Error('Unexpected loop exit');
 }
 
-/**
- * Call a single model with timeout
- */
-async function callSingleModel(
+async function callOpenRouterAPI(
     model: string,
-    messages: Array<{ role: string; content: string }>,
+    messages: any[],
     apiKey: string,
     temperature: number,
-    maxTokens: number,
-    timeout: number
+    maxTokens: number
 ): Promise<{ content: string; tokensUsed?: number }> {
-
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), timeout);
+    const timeoutId = setTimeout(() => controller.abort(), GLOBAL_TIMEOUT_MS);
 
     try {
         const response = await fetch(OPENROUTER_API_URL, {
@@ -137,8 +105,8 @@ async function callSingleModel(
             headers: {
                 'Authorization': `Bearer ${apiKey}`,
                 'Content-Type': 'application/json',
-                'HTTP-Referer': process.env.NEXT_PUBLIC_SITE_URL || 'https://github.com/pranata-dev/ai-personal-assistant',
-                'X-Title': 'AI Personal Assistant (Dev)'
+                'HTTP-Referer': process.env.NEXT_PUBLIC_SITE_URL || 'https://github.com/pranata-dev',
+                'X-Title': 'AI Assistant (Single Model)'
             },
             body: JSON.stringify({
                 model,
@@ -151,34 +119,19 @@ async function callSingleModel(
 
         clearTimeout(timeoutId);
 
-        if (response.status === 429) {
-            throw new Error('Rate limit exceeded');
-        }
-
-        if (response.status === 502 || response.status === 503) {
-            throw new Error('No endpoints available (Service Unavailable)');
-        }
-
         if (!response.ok) {
-            let errorMsg = `API error ${response.status}`;
-            try {
-                const errJson = await response.json();
-                if (errJson.error?.message) {
-                    errorMsg = errJson.error.message; // Use the clean message from provider
-                } else {
-                    errorMsg += `: ${JSON.stringify(errJson)}`;
-                }
-            } catch {
-                const errText = await response.text();
-                errorMsg += `: ${errText}`;
-            }
-            throw new Error(errorMsg);
+            // Throw specific errors for the retry loop to catch
+            if (response.status === 429) throw new Error('Rate limit exceeded (429)');
+            if (response.status >= 500) throw new Error(`Server Error (${response.status})`);
+
+            const errText = await response.text();
+            throw new Error(`API Error ${response.status}: ${errText}`);
         }
 
         const data = await response.json();
 
         if (data.error) {
-            throw new Error(data.error.message || 'Unknown API error');
+            throw new Error(data.error.message || 'API Error');
         }
 
         return {
@@ -188,27 +141,13 @@ async function callSingleModel(
 
     } catch (error) {
         clearTimeout(timeoutId);
-
         if (error instanceof Error && error.name === 'AbortError') {
-            throw new Error(`Request timeout after ${timeout}ms`);
+            throw new Error('Request Timeout');
         }
-
         throw error;
     }
 }
 
-/**
- * Simple hallucination detection
- * Returns true if response might contain hallucinated content
- */
 export function detectPotentialHallucination(response: string): boolean {
-    const hallucinationPatterns = [
-        /as of my (last |knowledge )?cutoff/i,
-        /I don't have (access to )?real-time/i,
-        /my training data (only goes|ends)/i,
-        /I cannot browse the internet/i,
-        /I don't have the ability to access/i
-    ];
-
-    return hallucinationPatterns.some(pattern => pattern.test(response));
+    return false; // Disabled for simplicity
 }

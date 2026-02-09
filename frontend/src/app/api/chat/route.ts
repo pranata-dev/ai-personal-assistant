@@ -1,120 +1,33 @@
 import { NextResponse } from 'next/server';
-import { getSystemPrompt, detectOperatingMode } from '@/lib/ai-engine';
-import { PersonalityMode } from '@/types';
-import { detectRetrievalIntent, extractSearchQuery } from '@/lib/retrieval-intent';
-import { fetchFromJina, buildRetrievalContext } from '@/lib/retrieval-service';
-import { log, logError } from '@/lib/logger';
-import { callLLM } from '@/lib/llm-service';
-import { getDefaultModelId } from '@/lib/models';
 
-const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
-const OPENROUTER_API_URL = 'https://openrouter.ai/api/v1/chat/completions';
+/**
+ * Chat API Route – Placeholder Proxy
+ * 
+ * In the monorepo architecture, this route acts as a thin proxy
+ * to the Python FastAPI backend. For now, it returns a placeholder
+ * response until the backend is wired up in Step 3.
+ */
+
+const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:8000';
 
 export async function POST(request: Request) {
     try {
-        if (!OPENROUTER_API_KEY) {
-            return NextResponse.json(
-                { error: 'OpenRouter API Key not configured' },
-                { status: 500 }
-            );
-        }
-
         const body = await request.json();
-        const { message, mode, history, model } = body;
+        const { message, mode, history } = body;
 
-        // Detect operating mode (assistant vs chat)
-        const operatingMode = detectOperatingMode(message);
-
-        // 1. Detect if retrieval is needed using intent detection
-        const retrievalIntent = detectRetrievalIntent(message);
-        let retrievalContext = '';
-        let retrievalNotice = '';
-
-        if (retrievalIntent.shouldRetrieve) {
-            log('info', 'system', 'RETRIEVAL_TRIGGERED', {
-                data: {
-                    trigger: retrievalIntent.matchedTrigger,
-                    confidence: retrievalIntent.confidence,
-                    reason: retrievalIntent.reason
-                }
-            });
-
-            // Extract optimized search query
-            const searchQuery = extractSearchQuery(message);
-
-            // Fetch from Web Search
-            const result = await fetchFromJina(searchQuery);
-
-            if (result.success) {
-                retrievalContext = buildRetrievalContext(result);
-                console.log(`✅ Web Search retrieval successful (${result.content.length} chars, ${result.processingTimeMs}ms)`);
-            } else {
-                // Retrieval failed - continue without it
-                retrievalNotice = '\n\n(Note: Real-time data retrieval was attempted but unavailable. Response based on available knowledge.)';
-                console.warn(`⚠️ Web Search retrieval failed: ${result.error}`);
-                logError('system', 'RETRIEVAL_FAILED', new Error(result.error));
-            }
-        }
-
-        // 2. Prepare System Prompt with retrieval context
-        const baseSystemPrompt = getSystemPrompt(mode as PersonalityMode, operatingMode);
-        const fullSystemPrompt = retrievalContext
-            ? `${baseSystemPrompt}\n\n${retrievalContext}`
-            : baseSystemPrompt;
-
-        // 3. Prepare Messages for API
-        const messages = [
-            { role: 'system', content: fullSystemPrompt },
-            ...history.map((msg: any) => ({
-                role: msg.role,
-                content: msg.content
-            })),
-            { role: 'user', content: message }
-        ];
-
-        // 4. Call OpenRouter API (delegated to LLM Service)
-        const finalModel = model || getDefaultModelId();
-        console.log(`📡 Final Model Selection: ${finalModel} (requested: ${model || 'none'})`);
-
-        const result = await callLLM({
-            messages,
-            model: finalModel,
-            temperature: 0.5,
-            timeout: 45000
-        }, OPENROUTER_API_KEY);
-
+        // TODO: Step 3 will wire this to the Python backend
+        // For now, return a placeholder response so the UI stays functional
         return NextResponse.json({
-            response: result.content + retrievalNotice,
-            model: result.modelUsed,
-            usedRetrieval: retrievalIntent.shouldRetrieve && retrievalContext !== ''
+            response: `🔧 **Backend not connected yet.** Your message: "${message}" (mode: ${mode}). The Python backend will handle this in Step 4.`,
+            model: 'placeholder',
+            usedRetrieval: false,
         });
 
     } catch (error) {
         console.error('Chat Route Error:', error);
-
-        let errorMessage = "AI service is temporarily unavailable. Please try again later.";
-        const msg = error instanceof Error ? error.message : String(error);
-
-        if (msg.includes('quota') || msg.includes('billing')) {
-            errorMessage = "AI service quota exceeded. Please try again later or check API limits.";
-        } else if (msg.toLowerCase().includes('rate limit')) {
-            errorMessage = "AI service is currently busy (Rate Limit). Please try again in a few seconds.";
-        } else if (msg.toLowerCase().includes('all llm models failed')) {
-            // Graceful fallback: Prevent UI crash by successful response with warning
-            return NextResponse.json({
-                response: "⚠️ *System Notice: All AI models are currently experiencing high traffic. Please try again in 1 minute.*",
-                model: 'system-fallback',
-                usedRetrieval: false
-            });
-        }
-
         return NextResponse.json(
-            { error: errorMessage },
-            { status: 503 }
+            { error: 'Chat proxy encountered an error.' },
+            { status: 500 }
         );
     }
 }
-
-
-
-

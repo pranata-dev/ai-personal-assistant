@@ -97,13 +97,12 @@ export default function Home() {
     setIsLoading(true);
 
     try {
-      const response = await fetch('/api/chat', {
+      const response = await fetch('http://localhost:8000/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           message: input,
           mode: currentMode,
-          model: currentModelId, // Pass the selected model
           history: getRecentContext(updatedMemory, 10)
         })
       });

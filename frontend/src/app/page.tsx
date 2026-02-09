@@ -100,18 +100,14 @@ export default function Home() {
       const response = await fetch('http://localhost:8000/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          message: input,
-          mode: currentMode,
-          history: getRecentContext(updatedMemory, 10)
-        })
+        body: JSON.stringify({ message: input })
       });
 
       const data = await response.json();
 
-      if (data.error) {
+      if (!response.ok) {
         const errorMessage = createMessage(
-          `⚠️ ${data.error}`,
+          `⚠️ ${data.detail || 'Backend error'}`,
           'assistant'
         );
         setMemory(addMessage(updatedMemory, errorMessage));
@@ -121,14 +117,14 @@ export default function Home() {
       }
     } catch {
       const errorMessage = createMessage(
-        '⚠️ Connection failed.',
+        '⚠️ Connection failed. Is the Python backend running on port 8000?',
         'assistant'
       );
       setMemory(addMessage(updatedMemory, errorMessage));
     } finally {
       setIsLoading(false);
     }
-  }, [memory, currentMode, currentModelId, handleModeChange, handleReset]);
+  }, [memory, currentMode, handleModeChange, handleReset]);
 
   // Show loading spinner while memory loads
   if (!memory) {

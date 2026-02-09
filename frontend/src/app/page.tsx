@@ -3,23 +3,16 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Message, PersonalityMode, Memory } from '@/types';
 import { loadMemory, saveMemory, addMessage, setMode, setModel, resetMemory, getRecentContext } from '@/lib/memory';
-import { detectIntent, getHelpMessage, getPromptEngineerResponse, getThoughtDumpResponse } from '@/lib/ai-engine';
 import { DEFAULT_MODEL_ID } from '@/lib/models';
 import ChatContainer from '@/components/Chat/ChatContainer';
 import Sidebar from '@/components/Workspace/Sidebar';
 import RightPanel from '@/components/Workspace/RightPanel';
 import MainArea from '@/components/Workspace/MainArea';
 import SettingsModal from '@/components/SettingsModal';
-import ChannelSelector from '@/components/ChannelSelector';
-import WhatsAppQR from '@/components/WhatsAppQR';
 import { Language } from '@/lib/i18n';
 import Header from '@/components/Header';
 
-// Channel type for multi-channel support
-type Channel = 'none' | 'web' | 'whatsapp';
-
 export default function Home() {
-  const [selectedChannel, setSelectedChannel] = useState<Channel>('none');
   const [memory, setMemory] = useState<Memory | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -100,39 +93,6 @@ export default function Home() {
     let updatedMemory = addMessage(memory, userMessage);
     setMemory(updatedMemory);
 
-    // Detect intent
-    const intent = detectIntent(input);
-
-    // Handle special intents locally
-    if (intent.type === 'mode_switch' && intent.mode) {
-      const modeMem = setMode(updatedMemory, intent.mode);
-      setMemory(modeMem);
-      return;
-    }
-
-    if (intent.type === 'reset_memory') {
-      handleReset();
-      return;
-    }
-
-    if (intent.type === 'help') {
-      const helpMessage = createMessage(getHelpMessage(currentMode), 'assistant');
-      setMemory(addMessage(updatedMemory, helpMessage));
-      return;
-    }
-
-    if (intent.type === 'prompt_engineer') {
-      const promptResponse = createMessage(getPromptEngineerResponse(input), 'assistant');
-      updatedMemory = addMessage(updatedMemory, promptResponse);
-      setMemory(updatedMemory);
-    }
-
-    if (intent.type === 'thought_dump') {
-      const dumpResponse = createMessage(getThoughtDumpResponse(), 'assistant');
-      updatedMemory = addMessage(updatedMemory, dumpResponse);
-      setMemory(updatedMemory);
-    }
-
     // Call API for AI response
     setIsLoading(true);
 
@@ -180,24 +140,7 @@ export default function Home() {
     );
   }
 
-  // Show channel selector if no channel selected
-  if (selectedChannel === 'none') {
-    return (
-      <ChannelSelector
-        onSelectWeb={() => setSelectedChannel('web')}
-        onSelectWhatsApp={() => setSelectedChannel('whatsapp')}
-      />
-    );
-  }
-
-  // Show WhatsApp QR screen
-  if (selectedChannel === 'whatsapp') {
-    return (
-      <WhatsAppQR onBack={() => setSelectedChannel('none')} />
-    );
-  }
-
-  // Web channel - show full chat interface
+  // Show full chat interface
   return (
     <div className="h-screen flex overflow-hidden font-sans transition-colors duration-200 bg-background text-foreground selection:bg-blue-100 selection:text-blue-900 dark:selection:bg-zinc-800 dark:selection:text-white">
       {/* 1. Left Sidebar */}

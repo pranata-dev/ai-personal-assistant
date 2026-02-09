@@ -5,7 +5,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from openai import AsyncOpenAI
-from duckduckgo_search import AsyncDDGS
+from duckduckgo_search import DDGS
 
 # Load environment variables
 load_dotenv()
@@ -50,7 +50,8 @@ class ChatResponse(BaseModel):
 async def perform_web_search(query: str) -> str:
     """Performs a real-time web search using DuckDuckGo."""
     try:
-        results = await AsyncDDGS().text(query, max_results=5)
+        # Use synchronous DDGS (v6+ standard)
+        results = DDGS().text(query, max_results=5)
         if not results:
             return "No search results found."
         

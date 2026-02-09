@@ -1,42 +1,31 @@
 'use client';
 
-import { PersonalityMode } from '@/types';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { RefreshCw } from 'lucide-react';
 
 interface HeaderProps {
-    mode: PersonalityMode;
     onReset: () => void;
 }
 
-export default function Header({ mode, onReset }: HeaderProps) {
+export default function Header({ onReset }: HeaderProps) {
     return (
-        <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-md border-b border-zinc-200 dark:border-zinc-900">
-            <div className="max-w-3xl mx-auto px-4 h-14 flex items-center justify-between">
-                {/* Logo */}
-                <div className="flex items-center gap-2">
+        <header className="sticky top-0 z-40 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-xl border-b border-zinc-200 dark:border-zinc-800">
+            <div className="max-w-3xl mx-auto px-4 h-12 flex items-center justify-between">
+                {/* Title */}
+                <div className="flex items-center gap-2.5">
                     <div className="w-2 h-2 rounded-full bg-zinc-900 dark:bg-zinc-100"></div>
-                    <h1 className="font-medium text-sm text-zinc-900 dark:text-zinc-300 tracking-tight">AI Assistant</h1>
-                    <span className="text-zinc-500 dark:text-zinc-400 text-xs px-2 py-0.5 rounded bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-900">
-                        v1.0
-                    </span>
+                    <h1 className="font-semibold text-sm text-zinc-900 dark:text-zinc-100 tracking-tight">
+                        Personal Agent
+                    </h1>
                 </div>
 
-                {/* Helper */}
-                <div className="flex items-center gap-4">
-                    <div className="flex items-center gap-2 text-[10px] text-zinc-500 uppercase tracking-widest font-medium">
-                        <span className="w-1.5 h-1.5 rounded-full bg-green-500/50 animate-pulse"></span>
-                        {mode} Mode
-                    </div>
-
-                    <div className="h-4 w-px bg-zinc-200 dark:bg-zinc-900 mx-1" />
+                {/* Actions */}
+                <div className="flex items-center gap-1">
                     <ThemeToggle />
-                    <div className="h-4 w-px bg-zinc-200 dark:bg-zinc-900 mx-1" />
-
                     <button
                         onClick={onReset}
-                        className="text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-300 transition-colors"
-                        title="Reset Context"
+                        className="p-2 rounded-lg text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+                        title="New conversation"
                     >
                         <RefreshCw size={14} />
                     </button>

@@ -2,11 +2,9 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { Message, PersonalityMode, Memory } from '@/types';
-import { loadMemory, saveMemory, addMessage, setMode, setModel, resetMemory, getRecentContext } from '@/lib/memory';
-import { DEFAULT_MODEL_ID } from '@/lib/models';
+import { loadMemory, saveMemory, addMessage, resetMemory } from '@/lib/memory';
 import ChatContainer from '@/components/Chat/ChatContainer';
 import Sidebar from '@/components/Workspace/Sidebar';
-import RightPanel from '@/components/Workspace/RightPanel';
 import MainArea from '@/components/Workspace/MainArea';
 import SettingsModal from '@/components/SettingsModal';
 import { Language } from '@/lib/i18n';
@@ -15,16 +13,11 @@ import Header from '@/components/Header';
 export default function Home() {
   const [memory, setMemory] = useState<Memory | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-
-  // Settings State
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  // Theme state removed - managed by next-themes
-  // Theme state removed - managed by next-themes
   const [spokenLanguage, setSpokenLanguage] = useState<'id-ID' | 'en-US' | 'auto'>('auto');
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  const [isRightPanelOpen, setIsRightPanelOpen] = useState(false);
 
-  // Load memory on mount - NO LocalStorage
+  // Load memory on mount
   useEffect(() => {
     setMemory(loadMemory());
   }, []);
@@ -36,12 +29,7 @@ export default function Home() {
     }
   }, [memory]);
 
-  // Theme Effect - Apply dark/light mode class to html element
-  // Theme Effect removed - managed by next-themes
-
-  // Derive memory-based stats
   const currentMode = memory?.preferences.currentMode ?? 'bestfriend';
-  const currentModelId = memory?.preferences.currentModelId ?? DEFAULT_MODEL_ID;
   const currentLanguage = (memory?.preferences.language as Language) ?? 'en';
   const messages = memory?.conversations ?? [];
 
@@ -50,64 +38,44 @@ export default function Home() {
     role,
     content,
     timestamp: Date.now(),
-    mode: currentMode
+    mode: currentMode,
   });
 
-  const handleModeChange = useCallback((newMode: PersonalityMode) => {
-    if (!memory) return;
-    const updatedMemory = setMode(memory, newMode);
-    setMemory(updatedMemory);
-  }, [memory]);
-
-  const handleModelChange = useCallback((newModelId: string) => {
-    if (!memory) return;
-    const updatedMemory = setModel(memory, newModelId);
-    setMemory(updatedMemory);
-  }, [memory]);
-
-  // FIX: This now correctly updates the language in memory
   const handleLanguageChange = useCallback((lang: Language) => {
     if (!memory) return;
-    setMemory(prev => {
+    setMemory((prev: Memory | null) => {
       if (!prev) return null;
       return {
         ...prev,
-        preferences: {
-          ...prev.preferences,
-          language: lang
-        }
+        preferences: { ...prev.preferences, language: lang },
       };
     });
   }, [memory]);
 
   const handleReset = useCallback(() => {
-    const freshMemory = resetMemory();
-    setMemory(freshMemory);
+    setMemory(resetMemory());
   }, []);
 
   const handleSend = useCallback(async (input: string) => {
     if (!memory) return;
 
-    // Add user message
     const userMessage = createMessage(input, 'user');
     let updatedMemory = addMessage(memory, userMessage);
     setMemory(updatedMemory);
-
-    // Call API for AI response
     setIsLoading(true);
 
     try {
       const response = await fetch('http://localhost:8000/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: input })
+        body: JSON.stringify({ message: input }),
       });
 
       const data = await response.json();
 
       if (!response.ok) {
         const errorMessage = createMessage(
-          `⚠️ ${data.detail || 'Backend error'}`,
+          `Error: ${data.detail || 'Backend unavailable'}`,
           'assistant'
         );
         setMemory(addMessage(updatedMemory, errorMessage));
@@ -117,44 +85,37 @@ export default function Home() {
       }
     } catch {
       const errorMessage = createMessage(
-        '⚠️ Connection failed. Is the Python backend running on port 8000?',
+        'Connection failed. Is the backend running on port 8000?',
         'assistant'
       );
       setMemory(addMessage(updatedMemory, errorMessage));
     } finally {
       setIsLoading(false);
     }
-  }, [memory, currentMode, handleModeChange, handleReset]);
+  }, [memory, currentMode]);
 
-  // Show loading spinner while memory loads
+  // Loading state
   if (!memory) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="w-8 h-8 rounded-full border-2 border-zinc-300 dark:border-zinc-700 border-t-zinc-600 dark:border-t-zinc-400 animate-spin" />
+      <div className="min-h-screen bg-white dark:bg-zinc-950 flex items-center justify-center">
+        <div className="w-6 h-6 rounded-full border-2 border-zinc-200 dark:border-zinc-700 border-t-zinc-500 dark:border-t-zinc-400 animate-spin" />
       </div>
     );
   }
 
-  // Show full chat interface
   return (
-    <div className="h-screen flex overflow-hidden font-sans transition-colors duration-200 bg-background text-foreground selection:bg-blue-100 selection:text-blue-900 dark:selection:bg-zinc-800 dark:selection:text-white">
-      {/* 1. Left Sidebar */}
+    <div className="h-screen flex overflow-hidden font-sans bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100">
+      {/* Sidebar */}
       <Sidebar
-        currentMode={currentMode}
-        currentModelId={currentModelId}
-        language={currentLanguage}
         isOpen={isSidebarOpen}
-        onModeChange={handleModeChange}
-        onModelChange={handleModelChange}
         onReset={handleReset}
         onOpenSettings={() => setIsSettingsOpen(true)}
-        onOpenSystemStatus={() => setIsRightPanelOpen(true)}
         onToggle={() => setIsSidebarOpen(!isSidebarOpen)}
       />
 
-      {/* 2. Main Chat Area */}
+      {/* Main Content */}
       <MainArea>
-        <Header mode={currentMode} onReset={handleReset} />
+        <Header onReset={handleReset} />
         <div className="flex-1 min-h-0 relative">
           <ChatContainer
             messages={messages}
@@ -167,19 +128,7 @@ export default function Home() {
         </div>
       </MainArea>
 
-      {/* 3. Right Panel (System Status) */}
-      {isRightPanelOpen && (
-        <div className="hidden xl:block">
-          <RightPanel
-            memory={memory}
-            mode={currentMode}
-            isOpen={isRightPanelOpen}
-            onToggle={() => setIsRightPanelOpen(false)}
-          />
-        </div>
-      )}
-
-      {/* Settings Modal */}
+      {/* Settings */}
       <SettingsModal
         isOpen={isSettingsOpen}
         onClose={() => setIsSettingsOpen(false)}
@@ -191,4 +140,3 @@ export default function Home() {
     </div>
   );
 }
-

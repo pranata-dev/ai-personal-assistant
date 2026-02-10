@@ -11,4 +11,4 @@ chromadb
 pypdf
 python-multipart
 sentence-transformers
-pysqlite3-binary
+pysqlite3

@@ -1,9 +1,10 @@
 'use client';
 
 import { useState, useRef, KeyboardEvent, ChangeEvent, FormEvent } from 'react';
-import { Send, Paperclip } from 'lucide-react';
+import { Send, Paperclip, Loader2 } from 'lucide-react';
 import { PersonalityMode } from '@/types';
 import { Language } from '@/lib/i18n';
+import { toast } from 'sonner';
 
 interface InputAreaProps {
     onSend: (message: string) => void;
@@ -15,6 +16,7 @@ interface InputAreaProps {
 
 export default function InputArea({ onSend, isLoading }: InputAreaProps) {
     const [input, setInput] = useState('');
+    const [isUploading, setIsUploading] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const handleSubmit = (e: FormEvent) => {
@@ -36,8 +38,11 @@ export default function InputArea({ onSend, isLoading }: InputAreaProps) {
         const file = e.target.files?.[0];
         if (!file) return;
 
+        setIsUploading(true);
         const formData = new FormData();
         formData.append('file', file);
+
+        const loadingToast = toast.loading("Uploading document...");
 
         try {
             const res = await fetch('http://localhost:8000/upload', {
@@ -46,14 +51,20 @@ export default function InputArea({ onSend, isLoading }: InputAreaProps) {
             });
 
             if (res.ok) {
-                alert("Knowledge Learned! 🧠\nI can now answer questions about this document.");
+                toast.dismiss(loadingToast);
+                toast.success("Knowledge Learned! 🧠", {
+                    description: "I can now answer questions about this document."
+                });
             } else {
-                alert("Upload failed.");
+                toast.dismiss(loadingToast);
+                toast.error("Upload failed.");
             }
         } catch (error) {
             console.error("Upload error:", error);
-            alert("Upload error.");
+            toast.dismiss(loadingToast);
+            toast.error("Upload error.");
         } finally {
+            setIsUploading(false);
             // Reset file input
             if (fileInputRef.current) fileInputRef.current.value = '';
         }
@@ -75,9 +86,13 @@ export default function InputArea({ onSend, isLoading }: InputAreaProps) {
                     onClick={() => fileInputRef.current?.click()}
                     className="p-2 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors"
                     title="Upload Document"
-                    disabled={isLoading}
+                    disabled={isLoading || isUploading}
                 >
-                    <Paperclip className="w-5 h-5" />
+                    {isUploading ? (
+                        <Loader2 className="w-5 h-5 animate-spin" />
+                    ) : (
+                        <Paperclip className="w-5 h-5" />
+                    )}
                 </button>
 
                 <textarea

@@ -86,26 +86,28 @@ async def get_history(session: Session = Depends(get_session)):
     messages = session.exec(select(Message).order_by(Message.timestamp)).all()
     return messages
 
-@app.post("/chat", response_model=ChatResponse)
+from fastapi.responses import StreamingResponse
+
+# ... (other imports)
+
+@app.post("/chat")  # Removed response_model because it returns StreamingResponse
 async def chat(req: ChatRequest, session: Session = Depends(get_session)):
     """
-    Agentic Loop (Context Aware & Persistent):
+    Agentic Loop (Streaming & Persistent):
     1. Receive full conversation history.
     2. Save User Message to DB.
-    3. Process with LLM (Thinking Loop).
-    4. Save Assistant Response to DB.
-    5. Return final response.
+    3. Stream Thinking/Response.
+    4. Save Assistant Response to DB (after stream).
     """
     
-    # Save User Message to DB
-    # We assume the frontend sends the full history, and the LAST message is the new user input.
+    # Save User Message
     if req.messages and req.messages[-1]["role"] == "user":
         last_msg = req.messages[-1]
         user_msg = Message(role="user", content=last_msg["content"])
         session.add(user_msg)
         session.commit()
     
-    # System prompt to enforce tool usage via JSON
+    # System prompt
     SYSTEM_PROMPT = """
     You are a helpful AI assistant.
     
@@ -118,64 +120,68 @@ async def chat(req: ChatRequest, session: Session = Depends(get_session)):
     If the user asks a normal question (coding, greetings, general knowledge), just answer normally.
     """
 
-    try:
-        # 1. Construct Context: System Prompt + History
-        messages = [{"role": "system", "content": SYSTEM_PROMPT}] + req.messages
+    async def generate():
+        full_response = ""
+        try:
+            # 1. First Pass: Non-streaming to check for tool calls
+            messages = [{"role": "system", "content": SYSTEM_PROMPT}] + req.messages
+            
+            completion = await client.chat.completions.create(
+                model=MODEL,
+                messages=messages,
+                extra_headers={"HTTP-Referer": "http://localhost:3000", "X-Title": "Local Jarvis"},
+            )
+            
+            initial_response = completion.choices[0].message.content.strip()
 
-        # 2. First Pass: Ask the LLM
-        completion = await client.chat.completions.create(
-            model=MODEL,
-            messages=messages,
-            extra_headers={
-                "HTTP-Referer": "http://localhost:3000",
-                "X-Title": "Local Jarvis",
-            },
-        )
-        
-        initial_response = completion.choices[0].message.content.strip()
-        final_answer = initial_response
+            # 2. Check for Tool Call
+            if initial_response.startswith('{"tool": "search"'):
+                try:
+                    tool_call = json.loads(initial_response)
+                    query = tool_call.get("query")
+                    
+                    # Yield a thinking status? (Optional, maybe later)
+                    # yield "Thinking...\n" 
+                    
+                    print(f"🔎 Perform Search: {query}")
+                    search_results = await perform_web_search(query)
+                    
+                    # 3. Second Pass: Streaming answer with context
+                    messages.append({"role": "assistant", "content": initial_response})
+                    messages.append({
+                        "role": "system", 
+                        "content": f"Here are the search results for '{query}':\n\n{search_results}\n\nPlease answer the user's original question based on these results."
+                    })
+                    
+                    stream = await client.chat.completions.create(
+                        model=MODEL,
+                        messages=messages,
+                        stream=True,
+                        extra_headers={"HTTP-Referer": "http://localhost:3000", "X-Title": "Local Jarvis"},
+                    )
 
-        # 3. Check for Tool Call
-        if initial_response.startswith('{"tool": "search"'):
-            try:
-                # Parse JSON
-                tool_call = json.loads(initial_response)
-                query = tool_call.get("query")
-                
-                # Execute Search
-                print(f"🔎 Perform Search: {query}")
-                search_results = await perform_web_search(query)
-                
-                # 4. Second Pass: Answer with Context
-                # Append the "Thinking" output and the results to the context
-                messages.append({"role": "assistant", "content": initial_response})
-                messages.append({
-                    "role": "system", 
-                    "content": f"Here are the search results for '{query}':\n\n{search_results}\n\nPlease answer the user's original question based on these results."
-                })
-                
-                final_completion = await client.chat.completions.create(
-                    model=MODEL,
-                    messages=messages,
-                    extra_headers={
-                        "HTTP-Referer": "http://localhost:3000",
-                        "X-Title": "Local Jarvis",
-                    },
-                )
-                
-                final_answer = final_completion.choices[0].message.content
-                
-            except json.JSONDecodeError:
-                # Fallback if JSON is malformed
-                pass
-        
-        # Save Assistant Response to DB
-        assistant_msg = Message(role="assistant", content=final_answer)
-        session.add(assistant_msg)
-        session.commit()
+                    async for chunk in stream:
+                        content = chunk.choices[0].delta.content or ""
+                        if content:
+                            full_response += content
+                            yield content
 
-        # Return final answer
-        return ChatResponse(response=final_answer)
+                except json.JSONDecodeError:
+                    # Fallback to initial response
+                    full_response = initial_response
+                    yield initial_response
+            else:
+                # No tool call, yield initial response directly
+                full_response = initial_response
+                yield initial_response
 
-    except Exception as e:
-        raise HTTPException(status_code=503, detail=f"OpenRouter/Backend API error: {str(e)}")
+            # 4. Save Assistant Response to DB
+            if full_response:
+                assistant_msg = Message(role="assistant", content=full_response)
+                session.add(assistant_msg)
+                session.commit()
+                
+        except Exception as e:
+            yield f"Error: {str(e)}"
+
+    return StreamingResponse(generate(), media_type="text/plain")

@@ -172,7 +172,7 @@ async def chat(req: ChatRequest, session: Session = Depends(get_session)):
             completion = await client.chat.completions.create(
                 model=active_model,
                 messages=messages,
-                extra_headers={"HTTP-Referer": "http://localhost:3000", "X-Title": "Local Jarvis"},
+                extra_headers={"HTTP-Referer": "http://localhost:3000", "X-Title": "Yume"},
             )
             
             initial_response = completion.choices[0].message.content.strip()
@@ -200,7 +200,7 @@ async def chat(req: ChatRequest, session: Session = Depends(get_session)):
                         model=active_model,
                         messages=messages,
                         stream=True,
-                        extra_headers={"HTTP-Referer": "http://localhost:3000", "X-Title": "Local Jarvis"},
+                        extra_headers={"HTTP-Referer": "http://localhost:3000", "X-Title": "Yume"},
                     )
 
                     async for chunk in stream:

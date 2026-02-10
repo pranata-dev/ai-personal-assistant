@@ -18,9 +18,9 @@ export const MODELS: AIModel[] = [
     description: "Specialized for Python, React, and general coding tasks.",
   },
   {
-    id: "google/gemini-2.0-flash-exp:free",
+    id: "z-ai/glm-4.5-air:free",
     name: "Fast",
-    description: "Fast fallback for quick responses.",
+    description: "High-speed model, great for quick tasks (GLM 4.5 Air).",
   },
 ];
 

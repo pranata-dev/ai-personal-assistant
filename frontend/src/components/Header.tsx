@@ -2,15 +2,12 @@
 
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { Trash2 } from 'lucide-react';
-import ModelSelector from '@/components/ModelSelector';
 
 interface HeaderProps {
     onClear: () => void;
-    currentModel: string;
-    onModelChange: (modelId: string) => void;
 }
 
-export default function Header({ onClear, currentModel, onModelChange }: HeaderProps) {
+export default function Header({ onClear }: HeaderProps) {
     return (
         <header className="sticky top-0 z-40 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-xl border-b border-zinc-200 dark:border-zinc-800">
             <div className="max-w-3xl mx-auto px-4 h-12 flex items-center justify-between">
@@ -18,16 +15,12 @@ export default function Header({ onClear, currentModel, onModelChange }: HeaderP
                 <div className="flex items-center gap-2.5">
                     <div className="w-2 h-2 rounded-full bg-zinc-900 dark:bg-zinc-100"></div>
                     <h1 className="font-semibold text-sm text-zinc-900 dark:text-zinc-100 tracking-tight">
-                        Personal Agent
+                        Yume
                     </h1>
                 </div>
 
                 {/* Actions */}
                 <div className="flex items-center gap-1.5">
-                    <ModelSelector
-                        currentModel={currentModel}
-                        onModelChange={onModelChange}
-                    />
                     <ThemeToggle />
                     <button
                         onClick={onClear}

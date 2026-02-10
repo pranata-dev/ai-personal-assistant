@@ -84,6 +84,15 @@ export default function Sidebar({
                     {isOpen && 'Settings'}
                 </button>
             </div>
+
+            {/* Footer */}
+            {isOpen && (
+                <div className="px-3 pb-3 pt-2">
+                    <p className="text-xs text-zinc-400 dark:text-zinc-600 text-center">
+                        Made with love by LumoraLabs
+                    </p>
+                </div>
+            )}
         </div>
     );
 }

@@ -4,3 +4,9 @@ openai
 python-dotenv
 duckduckgo-search
 sqlmodel
+langchain
+langchain-community
+chromadb
+pypdf
+python-multipart
+sentence-transformers

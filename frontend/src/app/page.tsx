@@ -82,7 +82,7 @@ export default function Home() {
     setIsLoading(true);
 
     try {
-      // Prepare context for backend (map to simple objects)
+      // Prepare context
       const context = updatedMemory.conversations.map(msg => ({
         role: msg.role,
         content: msg.content
@@ -94,24 +94,53 @@ export default function Home() {
         body: JSON.stringify({ messages: context }),
       });
 
-      const data = await response.json();
+      if (!response.ok) throw new Error(response.statusText);
 
-      if (!response.ok) {
-        const errorMessage = createMessage(
-          `Error: ${data.detail || 'Backend unavailable'}`,
-          'assistant'
-        );
-        setMemory(addMessage(updatedMemory, errorMessage));
-      } else {
-        const assistantMessage = createMessage(data.response, 'assistant');
-        setMemory(addMessage(updatedMemory, assistantMessage));
+      // Create placeholder for assistant message
+      const assistantMessage = createMessage('', 'assistant');
+      setMemory(prev => prev ? addMessage(prev, assistantMessage) : null);
+
+      if (!response.body) return;
+
+      // Stream handling
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let streamedResponse = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const chunk = decoder.decode(value, { stream: true });
+        streamedResponse += chunk;
+
+        // Update last message with new content
+        setMemory(prev => {
+          if (!prev) return null;
+          const newConversations = [...prev.conversations];
+          const lastMsgIndex = newConversations.length - 1;
+
+          if (lastMsgIndex >= 0) {
+            newConversations[lastMsgIndex] = {
+              ...newConversations[lastMsgIndex],
+              content: streamedResponse
+            };
+          }
+
+          return {
+            ...prev,
+            conversations: newConversations
+          };
+        });
       }
-    } catch {
+
+    } catch (error) {
+      console.error('Streaming error:', error);
       const errorMessage = createMessage(
-        'Connection failed. Is the backend running on port 8000?',
+        'Connection failed or backend error.',
         'assistant'
       );
-      setMemory(addMessage(updatedMemory, errorMessage));
+      setMemory(prev => prev ? addMessage(prev, errorMessage) : null);
     } finally {
       setIsLoading(false);
     }

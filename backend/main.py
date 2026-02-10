@@ -3,14 +3,16 @@ import json
 from contextlib import asynccontextmanager
 from typing import List, Dict, Optional
 from dotenv import load_dotenv
-from fastapi import FastAPI, HTTPException, Depends
+from fastapi import FastAPI, HTTPException, Depends, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse
 from sqlmodel import Session, select, delete
 from pydantic import BaseModel
 from openai import AsyncOpenAI
 from duckduckgo_search import DDGS
 
 from database import create_db_and_tables, get_session, Message
+from rag import rag_system
 
 # Load environment variables
 load_dotenv()
@@ -30,13 +32,13 @@ async def lifespan(app: FastAPI):
 
 # FastAPI app
 app = FastAPI(
-    title="AI Assistant Backend",
+    title="Yume AI Backend",
     description="Python FastAPI backend powered by OpenRouter (Free Tier) with DuckDuckGo Search.",
-    version="1.3.0",
+    version="1.4.0",
     lifespan=lifespan,
 )
 
-# CORS
+# CORS - Allow all origins for development
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -62,7 +64,6 @@ class ChatResponse(BaseModel):
 async def perform_web_search(query: str) -> str:
     """Performs a real-time web search using DuckDuckGo."""
     try:
-        # Use synchronous DDGS (v6+ standard)
         results = DDGS().text(query, max_results=5)
         if not results:
             return "No search results found."
@@ -77,17 +78,9 @@ async def perform_web_search(query: str) -> str:
 
 # ---------- Endpoints ----------
 
-from fastapi import FastAPI, HTTPException, Depends, UploadFile, File
-# ... (existing imports, but add UploadFile, File)
-from rag import rag_system
-
-# ... (app, lifespan, models, middleware)
-
-# ---------- Endpoints ----------
-
 @app.get("/")
 async def root():
-    return {"status": "ok", "service": "AI Assistant Backend", "default_model": DEFAULT_MODEL}
+    return {"status": "ok", "service": "Yume AI Backend", "default_model": DEFAULT_MODEL}
 
 @app.get("/history", response_model=List[Message])
 async def get_history(session: Session = Depends(get_session)):
@@ -132,7 +125,7 @@ async def chat(req: ChatRequest, session: Session = Depends(get_session)):
         sources = rag_result["sources"]
         
         # Format sources for prompt
-        source_list = ", ".join([s.split("\\")[-1].split("/")[-1] for s in sources]) # Clean filenames
+        source_list = ", ".join([s.split("\\")[-1].split("/")[-1] for s in sources])
     else:
         retrieved_context = ""
         source_list = ""
@@ -183,9 +176,6 @@ async def chat(req: ChatRequest, session: Session = Depends(get_session)):
                     tool_call = json.loads(initial_response)
                     query = tool_call.get("query")
                     
-                    # Yield a thinking status? (Optional, maybe later)
-                    # yield "Thinking...\n" 
-                    
                     print(f"🔎 Perform Search: {query}")
                     search_results = await perform_web_search(query)
                     
@@ -210,7 +200,6 @@ async def chat(req: ChatRequest, session: Session = Depends(get_session)):
                             yield content
 
                 except json.JSONDecodeError:
-                    # Fallback to initial response
                     full_response = initial_response
                     yield initial_response
             else:

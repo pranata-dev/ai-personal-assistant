@@ -12,6 +12,8 @@ import Header from '@/components/Header';
 import { Toaster, toast } from 'sonner';
 import { DEFAULT_MODEL_ID } from '@/lib/models';
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+
 export default function Home() {
   const [memory, setMemory] = useState<Memory | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -24,7 +26,7 @@ export default function Home() {
   useEffect(() => {
     const initialMemory = loadMemory();
 
-    fetch('http://localhost:8000/history')
+    fetch(`${API_URL}/history`)
       .then(res => {
         if (!res.ok) throw new Error('Failed to fetch history');
         return res.json();
@@ -69,7 +71,7 @@ export default function Home() {
     if (!confirm("Are you sure you want to clear the entire chat history?")) return;
 
     try {
-      const res = await fetch('http://localhost:8000/history', { method: 'DELETE' });
+      const res = await fetch(`${API_URL}/history`, { method: 'DELETE' });
       if (res.ok) {
         setMemory(resetMemory());
         toast.success("History cleared");
@@ -97,8 +99,7 @@ export default function Home() {
         content: msg.content
       }));
 
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-      const response = await fetch(`${apiUrl}/chat`, {
+      const response = await fetch(`${API_URL}/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ messages: context, model: currentModel }),
@@ -146,8 +147,9 @@ export default function Home() {
 
     } catch (error) {
       console.error('Streaming error:', error);
+      const errMsg = error instanceof Error ? error.message : 'Unknown error';
       const errorMessage = createMessage(
-        'Connection failed or backend error.',
+        `⚠️ Could not reach the backend (${errMsg}). Please check that Docker containers are running with \`docker compose up\`.`,
         'assistant'
       );
       setMemory(prev => prev ? addMessage(prev, errorMessage) : null);

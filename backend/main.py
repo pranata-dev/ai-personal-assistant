@@ -4,7 +4,7 @@ import json
 from contextlib import asynccontextmanager
 from typing import List, Dict, Optional
 from dotenv import load_dotenv
-from fastapi import FastAPI, HTTPException, Depends, UploadFile, File
+from fastapi import FastAPI, HTTPException, Depends, UploadFile, File, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from sqlmodel import Session, select, delete
@@ -96,9 +96,22 @@ async def clear_history(session: Session = Depends(get_session)):
     return {"status": "success", "message": "History cleared"}
 
 @app.post("/upload")
-async def upload_document(file: UploadFile = File(...)):
-    """Uploads a PDF/TXT document to the knowledge base."""
-    return await rag_system.ingest(file)
+async def upload_document(
+    file: UploadFile = File(...), 
+    background_tasks: BackgroundTasks = BackgroundTasks()
+):
+    """Uploads a PDF/TXT document to the knowledge base (Async)."""
+    
+    # Save file to temp location
+    temp_filename = f"temp_{file.filename}"
+    with open(temp_filename, "wb") as f:
+        content = await file.read()
+        f.write(content)
+        
+    # Add background task
+    background_tasks.add_task(rag_system.process_file, temp_filename, file.filename)
+    
+    return {"status": "processing_started", "message": f"Ingesting {file.filename} in background."}
 
 @app.post("/chat")
 async def chat(req: ChatRequest, session: Session = Depends(get_session)):

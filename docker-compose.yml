@@ -9,6 +9,8 @@ services:
       - ./backend/.env
     volumes:
       - ./backend:/app
+      - db_data:/app/data
+      - chroma_data:/app/chroma_db
     restart: always
 
   frontend:
@@ -26,3 +28,7 @@ services:
     depends_on:
       - backend
     restart: always
+
+volumes:
+  db_data:
+  chroma_data:

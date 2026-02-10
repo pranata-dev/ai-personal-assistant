@@ -103,7 +103,7 @@ export default function InputArea({ onSend, isLoading, currentModel, onModelChan
 
                         <textarea
                             value={input}
-                            onChange={(e) => setInput(e.target.value)}
+                            onChange={(e: ChangeEvent<HTMLTextAreaElement>) => setInput(e.target.value)}
                             onKeyDown={handleKeyDown}
                             placeholder="Message..."
                             rows={1}

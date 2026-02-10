@@ -8,7 +8,12 @@ class Message(SQLModel, table=True):
     content: str
     timestamp: datetime = Field(default_factory=datetime.utcnow)
 
-sqlite_file_name = "ai_assistant.db"
+import os
+
+# Create data directory if it doesn't exist
+os.makedirs("data", exist_ok=True)
+
+sqlite_file_name = "data/ai_assistant.db"
 sqlite_url = f"sqlite:///{sqlite_file_name}"
 
 # check_same_thread=False is needed for SQLite with FastAPI

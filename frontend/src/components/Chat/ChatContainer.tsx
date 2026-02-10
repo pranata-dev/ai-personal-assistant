@@ -71,7 +71,7 @@ export default function ChatContainer({ messages, mode, isLoading, onSend, spoke
                                 {[
                                     { label: t('draftEmail', language), icon: Terminal, prompt: 'Draft a professional email regarding...' },
                                     { label: t('brainstormIdeas', language), icon: Sparkles, prompt: 'Brainstorm creative ideas for...' },
-                                ].map((item) => (
+                                ].map((item: { label: string; icon: any; prompt: string }) => (
                                     <button
                                         key={item.label}
                                         onClick={() => onSend(item.prompt)}

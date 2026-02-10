@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, KeyboardEvent, ChangeEvent, FormEvent } from 'react';
-import { Send, Paperclip, Loader2 } from 'lucide-react';
+import { Send, Paperclip, Loader2, Square } from 'lucide-react';
 import { PersonalityMode } from '@/types';
 import { Language } from '@/lib/i18n';
 import { toast } from 'sonner';
@@ -9,6 +9,7 @@ import ModelSelector from '@/components/ModelSelector';
 
 interface InputAreaProps {
     onSend: (message: string) => void;
+    onStop: () => void;
     isLoading: boolean;
     mode: PersonalityMode;
     spokenLanguage: 'id-ID' | 'en-US' | 'auto';
@@ -17,7 +18,7 @@ interface InputAreaProps {
     onModelChange: (modelId: string) => void;
 }
 
-export default function InputArea({ onSend, isLoading, currentModel, onModelChange }: InputAreaProps) {
+export default function InputArea({ onSend, onStop, isLoading, currentModel, onModelChange }: InputAreaProps) {
     const [input, setInput] = useState('');
     const [isUploading, setIsUploading] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -112,13 +113,23 @@ export default function InputArea({ onSend, isLoading, currentModel, onModelChan
                             disabled={isLoading}
                         />
 
-                        <button
-                            onClick={handleSubmit}
-                            disabled={!input.trim() || isLoading}
-                            className="p-2 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 rounded-xl hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-                        >
-                            <Send className="w-5 h-5" />
-                        </button>
+                        {isLoading ? (
+                            <button
+                                onClick={onStop}
+                                className="p-2 bg-red-500 text-white rounded-xl hover:opacity-90 transition-all animate-pulse"
+                                title="Stop generation"
+                            >
+                                <Square className="w-5 h-5 fill-current" />
+                            </button>
+                        ) : (
+                            <button
+                                onClick={handleSubmit}
+                                disabled={!input.trim()}
+                                className="p-2 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 rounded-xl hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                            >
+                                <Send className="w-5 h-5" />
+                            </button>
+                        )}
                     </div>
 
                     {/* Model Selector below input */}

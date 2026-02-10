@@ -13,13 +13,14 @@ interface ChatContainerProps {
     mode: PersonalityMode;
     isLoading: boolean;
     onSend: (message: string) => void;
+    onStop: () => void;
     spokenLanguage: 'id-ID' | 'en-US' | 'auto';
     language: Language;
     currentModel: string;
     onModelChange: (modelId: string) => void;
 }
 
-export default function ChatContainer({ messages, mode, isLoading, onSend, spokenLanguage, language, currentModel, onModelChange }: ChatContainerProps) {
+export default function ChatContainer({ messages, mode, isLoading, onSend, onStop, spokenLanguage, language, currentModel, onModelChange }: ChatContainerProps) {
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const [typedText, setTypedText] = useState('');
     const fullText = "Ready to solve problems together.";
@@ -109,7 +110,16 @@ export default function ChatContainer({ messages, mode, isLoading, onSend, spoke
 
             {/* Input area - Sticky at bottom */}
             <div className="z-10 bg-background border-t border-zinc-200 dark:border-black transition-colors duration-200">
-                <InputArea onSend={onSend} isLoading={isLoading} mode={mode} spokenLanguage={spokenLanguage} language={language} currentModel={currentModel} onModelChange={onModelChange} />
+                <InputArea
+                    onSend={onSend}
+                    onStop={onStop}
+                    isLoading={isLoading}
+                    mode={mode}
+                    spokenLanguage={spokenLanguage}
+                    language={language}
+                    currentModel={currentModel}
+                    onModelChange={onModelChange}
+                />
             </div>
         </div>
     );

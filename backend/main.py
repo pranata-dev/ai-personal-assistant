@@ -152,7 +152,7 @@ async def chat(req: ChatRequest, session: Session = Depends(get_session)):
     Example: "According to 'resume.pdf', the candidate has..."
     
     If the user asks about current events, news, or real-time information that requires internet access, you MUST output a JSON object in this exact format:
-    {"tool": "search", "query": "your search query here"}
+    {{"tool": "search", "query": "your search query here"}}
     
     Do NOT output anything else if you want to search. Just the JSON.
     

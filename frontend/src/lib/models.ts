@@ -1,35 +1,27 @@
-import { Model } from '@/types';
+// AI Model Configuration for Multi-Model Support
 
-// Strict Single Model Configuration
-export const PRIMARY_MODEL_ID = 'z-ai/glm-4.5-air:free';
-
-export const SINGLE_MODEL_CONFIG: Model = {
-  id: PRIMARY_MODEL_ID,
-  name: 'GLM 4.5 Air',
-  role: 'primary',
-  description: 'Primary AI Model (Free & Fast)',
-  isFree: true
-};
-
-// Accessors (Simplified for compatibility)
-export function getDefaultModelId(): string {
-  return PRIMARY_MODEL_ID;
+export interface AIModel {
+  id: string;
+  name: string;
+  description: string;
 }
 
-export function getModelPool(): Model[] {
-  return [SINGLE_MODEL_CONFIG];
-}
+export const MODELS: AIModel[] = [
+  {
+    id: "tngtech/deepseek-r1t2-chimera:free",
+    name: "DeepSeek R1 Chimera (Logic)",
+    description: "Best for reasoning, RAG, and complex analysis.",
+  },
+  {
+    id: "qwen/qwen3-coder:free",
+    name: "Qwen 3 Coder (Dev)",
+    description: "Specialized for Python, React, and general coding tasks.",
+  },
+  {
+    id: "google/gemini-2.0-flash-exp:free",
+    name: "Gemini 2.0 Flash (Fast)",
+    description: "Fast fallback for quick responses.",
+  },
+];
 
-// Legacy exports to prevent breaking other files immediately
-export const AVAILABLE_MODELS = [SINGLE_MODEL_CONFIG];
-export const DEFAULT_MODEL_ID = PRIMARY_MODEL_ID;
-
-// Minimal helper to satisfy imports
-export function getModelById(id: string): Model | undefined {
-  return id === PRIMARY_MODEL_ID ? SINGLE_MODEL_CONFIG : undefined;
-}
-
-export function reportModelFailure(id: string, isQuotaError: boolean): void {
-  // No-op: We rely on the persistent retry queue in llm-service, not blocking.
-  console.warn(`[Model Failure] ${id} - Quota: ${isQuotaError}`);
-}
+export const DEFAULT_MODEL_ID = "tngtech/deepseek-r1t2-chimera:free";

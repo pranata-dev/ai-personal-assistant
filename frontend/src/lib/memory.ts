@@ -1,14 +1,14 @@
 import { PersonalityMode, Message, Memory, UserPreferences } from '@/types';
 import { DEFAULT_MODEL_ID } from '@/lib/models';
 
-// Stateless Memory Logic - Resets on refresh
-// We implement the Memory interface but don't persist it
+// Helper functions for Chat State Management
+// (Persistence is handled by the Backend/database)
 
 const DEFAULT_PREFERENCES: UserPreferences = {
     language: 'en',
     explanationStyle: 'simple',
     currentMode: 'bestfriend',
-    currentModelId: DEFAULT_MODEL_ID, // Initialize with default model
+    currentModelId: DEFAULT_MODEL_ID,
 };
 
 const DEFAULT_MEMORY: Memory = {
@@ -17,17 +17,12 @@ const DEFAULT_MEMORY: Memory = {
     lastUpdated: Date.now()
 };
 
-// Return a fresh memory object
+// Return initial state
 export function loadMemory(): Memory {
     return {
         ...DEFAULT_MEMORY,
         lastUpdated: Date.now()
     };
-}
-
-// No-op for save (stateless)
-export function saveMemory(memory: Memory): void {
-    // Intentionally empty - no persistence
 }
 
 export function addMessage(memory: Memory, message: Message): Memory {

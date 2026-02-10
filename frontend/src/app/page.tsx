@@ -177,7 +177,7 @@ export default function Home() {
 
       {/* Main Content */}
       <MainArea>
-        <Header onClear={handleReset} currentModel={currentModel} onModelChange={setCurrentModel} />
+        <Header onClear={handleReset} />
         <div className="flex-1 min-h-0 relative">
           <ChatContainer
             messages={messages}
@@ -186,6 +186,8 @@ export default function Home() {
             onSend={handleSend}
             spokenLanguage={spokenLanguage}
             language={currentLanguage}
+            currentModel={currentModel}
+            onModelChange={setCurrentModel}
           />
         </div>
       </MainArea>

@@ -15,9 +15,11 @@ interface ChatContainerProps {
     onSend: (message: string) => void;
     spokenLanguage: 'id-ID' | 'en-US' | 'auto';
     language: Language;
+    currentModel: string;
+    onModelChange: (modelId: string) => void;
 }
 
-export default function ChatContainer({ messages, mode, isLoading, onSend, spokenLanguage, language }: ChatContainerProps) {
+export default function ChatContainer({ messages, mode, isLoading, onSend, spokenLanguage, language, currentModel, onModelChange }: ChatContainerProps) {
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
     const scrollToBottom = () => {
@@ -87,7 +89,7 @@ export default function ChatContainer({ messages, mode, isLoading, onSend, spoke
 
             {/* Input area - Sticky at bottom */}
             <div className="z-10 bg-background border-t border-zinc-200 dark:border-black transition-colors duration-200">
-                <InputArea onSend={onSend} isLoading={isLoading} mode={mode} spokenLanguage={spokenLanguage} language={language} />
+                <InputArea onSend={onSend} isLoading={isLoading} mode={mode} spokenLanguage={spokenLanguage} language={language} currentModel={currentModel} onModelChange={onModelChange} />
             </div>
         </div>
     );

@@ -60,16 +60,21 @@ class RAGSystem:
             if os.path.exists(file_path):
                 os.remove(file_path)
 
-    def search(self, query: str, k: int = 3) -> str:
+    def search(self, query: str, k: int = 3) -> dict:
         """
-        Retrieves relevant context for a query.
+        Retrieves relevant context for a query, including source metadata.
+        Returns: {"context": str, "sources": List[str]}
         """
         results = vector_store.similarity_search(query, k=k)
         if not results:
-            return ""
+            return {"context": "", "sources": []}
         
         context = "\n\n".join([doc.page_content for doc in results])
-        return context
+        
+        # Extract unique sources
+        sources = list(set([doc.metadata.get("source", "Unknown") for doc in results]))
+        
+        return {"context": context, "sources": sources}
 
 # Singleton instance
 rag_system = RAGSystem()

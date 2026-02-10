@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { Message, PersonalityMode, Memory } from '@/types';
-import { loadMemory, saveMemory, addMessage, resetMemory } from '@/lib/memory';
+import { loadMemory, addMessage, resetMemory } from '@/lib/memory';
 import ChatContainer from '@/components/Chat/ChatContainer';
 import Sidebar from '@/components/Workspace/Sidebar';
 import MainArea from '@/components/Workspace/MainArea';
@@ -38,13 +38,6 @@ export default function Home() {
         setMemory(initialMemory);
       });
   }, []);
-
-  // Save preferences only (conversations are in DB)
-  useEffect(() => {
-    if (memory) {
-      saveMemory(memory);
-    }
-  }, [memory?.preferences]);
 
   const currentMode = memory?.preferences.currentMode ?? 'bestfriend';
   const currentLanguage = (memory?.preferences.language as Language) ?? 'en';

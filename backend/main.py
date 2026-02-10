@@ -81,6 +81,11 @@ async def root():
     return {"status": "ok", "service": "AI Assistant Backend", "model": MODEL}
 
 
+@app.get("/history", response_model=List[Message])
+async def get_history(session: Session = Depends(get_session)):
+    messages = session.exec(select(Message).order_by(Message.timestamp)).all()
+    return messages
+
 @app.post("/chat", response_model=ChatResponse)
 async def chat(req: ChatRequest, session: Session = Depends(get_session)):
     """

@@ -191,121 +191,116 @@ async def chat(req: ChatRequest, session: Session = Depends(get_session)):
     async def generate():
         full_response = ""
         user_query = req.messages[-1].content if req.messages else ""
-
-        # PATH A: Fast Model + Search Intent (Reflex)
-        if active_model == FAST_MODEL_ID and is_search_intent(user_query):
-            print(f"⚡ Fast Model Reflex Search: {user_query}")
-            try:
-                search_results = await perform_web_search(user_query)
-                
-                # Contextual Stream
-                messages = [{"role": "system", "content": SYSTEM_PROMPT}] + req.messages
-                messages.append({
-                    "role": "system", 
-                    "content": f"Here are the search results for '{user_query}':\n\n{search_results}\n\nPlease answer the user's original question based on these results."
-                })
-                
-                stream = await client.chat.completions.create(
-                    model=active_model,
-                    messages=messages,
-                    stream=True,
-                    extra_headers={"HTTP-Referer": "http://localhost:3000", "X-Title": "Yume"},
-                )
-                
-                async for chunk in stream:
-                    content = chunk.choices[0].delta.content or ""
-                    if content:
-                        full_response += content
-                        yield content
-                        
-            except Exception as e:
-                yield f"Search Error: {str(e)}"
-
-        # PATH B: Fast Model (No Search) OR Logic Model (Tool Parsing)
-        else:
-            # If Fast Model (No Search), just stream directly? 
-            # OR logic model which needs to "think" about tools?
-            # The original code did a non-streaming pass for EVERYONE to check for tools.
-            # For Fast Model without search intent, we can probably skip that and stream directly to be fast.
-            # But let's stick to the prompt: "If Fast Model: Check intent -> Search -> Stream. If Logic Model: Ask LLM -> Parse Regex -> Search -> Stream."
-            
-            should_check_tools = (active_model != FAST_MODEL_ID)
-            
-            if not should_check_tools:
-                # Fast Model, No Search Intent -> Direct Stream
-                messages = [{"role": "system", "content": SYSTEM_PROMPT}] + req.messages
-                stream = await client.chat.completions.create(
-                    model=active_model,
-                    messages=messages,
-                    stream=True,
-                    extra_headers={"HTTP-Referer": "http://localhost:3000", "X-Title": "Yume"},
-                )
-                async for chunk in stream:
-                    content = chunk.choices[0].delta.content or ""
-                    if content:
-                        full_response += content
-                        yield content
-            else:
-                # Logic Model -> Tool Check Loop
+        
+        try:
+            # PATH A: Fast Model + Search Intent (Reflex)
+            if active_model == FAST_MODEL_ID and is_search_intent(user_query):
+                print(f"⚡ Fast Model Reflex Search: {user_query}")
                 try:
-                    # 1. First Pass: Non-streaming to check for tool calls
-                    messages = [{"role": "system", "content": SYSTEM_PROMPT}] + req.messages
+                    search_results = await perform_web_search(user_query)
                     
-                    completion = await client.chat.completions.create(
+                    # Contextual Stream
+                    messages = [{"role": "system", "content": SYSTEM_PROMPT}] + req.messages
+                    messages.append({
+                        "role": "system", 
+                        "content": f"Here are the search results for '{user_query}':\n\n{search_results}\n\nPlease answer the user's original question based on these results."
+                    })
+                    
+                    stream = await client.chat.completions.create(
                         model=active_model,
                         messages=messages,
+                        stream=True,
                         extra_headers={"HTTP-Referer": "http://localhost:3000", "X-Title": "Yume"},
                     )
                     
-                    initial_response = completion.choices[0].message.content.strip()
+                    async for chunk in stream:
+                        content = chunk.choices[0].delta.content or ""
+                        if content:
+                            full_response += content
+                            yield content
+                            
+                except Exception as e:
+                    yield f"Search Error: {str(e)}"
 
-                    # 2. Check for Tool Call using Regex
-                    tool_pattern = r'\{"tool":\s*"search",\s*"query":\s*"(.*?)"\}'
-                    match = re.search(tool_pattern, initial_response, re.DOTALL)
+            # PATH B: Fast Model (No Search) OR Logic Model (Tool Parsing)
+            else:
+                should_check_tools = (active_model != FAST_MODEL_ID)
+                
+                if not should_check_tools:
+                    # Fast Model, No Search Intent -> Direct Stream
+                    messages = [{"role": "system", "content": SYSTEM_PROMPT}] + req.messages
+                    stream = await client.chat.completions.create(
+                        model=active_model,
+                        messages=messages,
+                        stream=True,
+                        extra_headers={"HTTP-Referer": "http://localhost:3000", "X-Title": "Yume"},
+                    )
+                    async for chunk in stream:
+                        content = chunk.choices[0].delta.content or ""
+                        if content:
+                            full_response += content
+                            yield content
+                else:
+                    # Logic Model -> Tool Check Loop
+                    try:
+                        # 1. First Pass: Non-streaming to check for tool calls
+                        messages = [{"role": "system", "content": SYSTEM_PROMPT}] + req.messages
+                        
+                        completion = await client.chat.completions.create(
+                            model=active_model,
+                            messages=messages,
+                            extra_headers={"HTTP-Referer": "http://localhost:3000", "X-Title": "Yume"},
+                        )
+                        
+                        initial_response = completion.choices[0].message.content.strip()
 
-                    if match:
-                        try:
-                            json_match = re.search(r'\{"tool":\s*"search",\s*"query":\s*".*?"\}', initial_response, re.DOTALL)
-                            if json_match:
-                                tool_json_str = json_match.group(0)
-                                tool_call = json.loads(tool_json_str)
-                                query = tool_call.get("query")
-                                
-                                print(f"🔎 Perform Search: {query}")
-                                search_results = await perform_web_search(query)
-                                
-                                # 3. Second Pass: Streaming answer with context
-                                messages.append({"role": "assistant", "content": initial_response})
-                                messages.append({
-                                    "role": "system", 
-                                    "content": f"Here are the search results for '{query}':\n\n{search_results}\n\nPlease answer the user's original question based on these results."
-                                })
-                                
-                                stream = await client.chat.completions.create(
-                                    model=active_model,
-                                    messages=messages,
-                                    stream=True,
-                                    extra_headers={"HTTP-Referer": "http://localhost:3000", "X-Title": "Yume"},
-                                )
+                        # 2. Check for Tool Call using Regex
+                        tool_pattern = r'\{"tool":\s*"search",\s*"query":\s*"(.*?)"\}'
+                        match = re.search(tool_pattern, initial_response, re.DOTALL)
 
-                                async for chunk in stream:
-                                    content = chunk.choices[0].delta.content or ""
-                                    if content:
-                                        full_response += content
-                                        yield content
-                            else:
+                        if match:
+                            try:
+                                json_match = re.search(r'\{"tool":\s*"search",\s*"query":\s*".*?"\}', initial_response, re.DOTALL)
+                                if json_match:
+                                    tool_json_str = json_match.group(0)
+                                    tool_call = json.loads(tool_json_str)
+                                    query = tool_call.get("query")
+                                    
+                                    print(f"🔎 Perform Search: {query}")
+                                    search_results = await perform_web_search(query)
+                                    
+                                    # 3. Second Pass: Streaming answer with context
+                                    messages.append({"role": "assistant", "content": initial_response})
+                                    messages.append({
+                                        "role": "system", 
+                                        "content": f"Here are the search results for '{query}':\n\n{search_results}\n\nPlease answer the user's original question based on these results."
+                                    })
+                                    
+                                    stream = await client.chat.completions.create(
+                                        model=active_model,
+                                        messages=messages,
+                                        stream=True,
+                                        extra_headers={"HTTP-Referer": "http://localhost:3000", "X-Title": "Yume"},
+                                    )
+
+                                    async for chunk in stream:
+                                        content = chunk.choices[0].delta.content or ""
+                                        if content:
+                                            full_response += content
+                                            yield content
+                                else:
+                                    full_response = initial_response
+                                    yield initial_response
+
+                            except json.JSONDecodeError:
                                 full_response = initial_response
                                 yield initial_response
-
-                        except json.JSONDecodeError:
+                        else:
+                            # No tool call, yield initial response directly
                             full_response = initial_response
                             yield initial_response
-                    else:
-                        # No tool call, yield initial response directly
-                        full_response = initial_response
-                        yield initial_response
-                except Exception as e:
-                     yield f"Error in logic flow: {str(e)}"
+                    except Exception as e:
+                         yield f"Error in logic flow: {str(e)}"
 
             # 4. Save Assistant Response to DB
             if full_response:
@@ -315,5 +310,5 @@ async def chat(req: ChatRequest, session: Session = Depends(get_session)):
                 
         except Exception as e:
             yield f"Error: {str(e)}"
-
+    
     return StreamingResponse(generate(), media_type="text/plain")

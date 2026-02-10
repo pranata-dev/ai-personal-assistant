@@ -1,12 +1,16 @@
 import os
 import json
+from contextlib import asynccontextmanager
 from typing import List, Dict
 from dotenv import load_dotenv
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
+from sqlmodel import Session
 from pydantic import BaseModel
 from openai import AsyncOpenAI
 from duckduckgo_search import DDGS
+
+from database import create_db_and_tables, get_session, Message
 
 # Load environment variables
 load_dotenv()
@@ -19,11 +23,17 @@ client = AsyncOpenAI(
 
 MODEL = "arcee-ai/trinity-large-preview:free"
 
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    create_db_and_tables()
+    yield
+
 # FastAPI app
 app = FastAPI(
     title="AI Assistant Backend",
     description="Python FastAPI backend powered by OpenRouter (Free Tier) with DuckDuckGo Search.",
-    version="1.2.0",
+    version="1.3.0",
+    lifespan=lifespan,
 )
 
 # CORS
@@ -72,13 +82,23 @@ async def root():
 
 
 @app.post("/chat", response_model=ChatResponse)
-async def chat(req: ChatRequest):
+async def chat(req: ChatRequest, session: Session = Depends(get_session)):
     """
-    Agentic Loop (Context Aware):
+    Agentic Loop (Context Aware & Persistent):
     1. Receive full conversation history.
-    2. Check if search is needed (Thinking Loop).
-    3. Return final response.
+    2. Save User Message to DB.
+    3. Process with LLM (Thinking Loop).
+    4. Save Assistant Response to DB.
+    5. Return final response.
     """
+    
+    # Save User Message to DB
+    # We assume the frontend sends the full history, and the LAST message is the new user input.
+    if req.messages and req.messages[-1]["role"] == "user":
+        last_msg = req.messages[-1]
+        user_msg = Message(role="user", content=last_msg["content"])
+        session.add(user_msg)
+        session.commit()
     
     # System prompt to enforce tool usage via JSON
     SYSTEM_PROMPT = """
@@ -108,6 +128,7 @@ async def chat(req: ChatRequest):
         )
         
         initial_response = completion.choices[0].message.content.strip()
+        final_answer = initial_response
 
         # 3. Check for Tool Call
         if initial_response.startswith('{"tool": "search"'):
@@ -137,15 +158,19 @@ async def chat(req: ChatRequest):
                     },
                 )
                 
-                # Return final answer
-                return ChatResponse(response=final_completion.choices[0].message.content)
+                final_answer = final_completion.choices[0].message.content
                 
             except json.JSONDecodeError:
                 # Fallback if JSON is malformed
-                return ChatResponse(response=initial_response)
+                pass
         
-        # No tool call, return initial response
-        return ChatResponse(response=initial_response)
+        # Save Assistant Response to DB
+        assistant_msg = Message(role="assistant", content=final_answer)
+        session.add(assistant_msg)
+        session.commit()
+
+        # Return final answer
+        return ChatResponse(response=final_answer)
 
     except Exception as e:
         raise HTTPException(status_code=503, detail=f"OpenRouter/Backend API error: {str(e)}")

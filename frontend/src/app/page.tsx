@@ -10,6 +10,7 @@ import SettingsModal from '@/components/SettingsModal';
 import { Language } from '@/lib/i18n';
 import Header from '@/components/Header';
 import { Toaster, toast } from 'sonner';
+import { DEFAULT_MODEL_ID } from '@/lib/models';
 
 export default function Home() {
   const [memory, setMemory] = useState<Memory | null>(null);
@@ -17,6 +18,7 @@ export default function Home() {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [spokenLanguage, setSpokenLanguage] = useState<'id-ID' | 'en-US' | 'auto'>('auto');
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [currentModel, setCurrentModel] = useState(DEFAULT_MODEL_ID);
 
   // Load memory and fetch history on mount
   useEffect(() => {
@@ -98,7 +100,7 @@ export default function Home() {
       const response = await fetch('http://localhost:8000/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages: context }),
+        body: JSON.stringify({ messages: context, model: currentModel }),
       });
 
       if (!response.ok) throw new Error(response.statusText);

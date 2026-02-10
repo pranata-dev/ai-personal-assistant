@@ -190,7 +190,7 @@ async def chat(req: ChatRequest, session: Session = Depends(get_session)):
 
     async def generate():
         full_response = ""
-        user_query = req.messages[-1].content if req.messages else ""
+        user_query = req.messages[-1]['content'] if req.messages else ""
         
         try:
             # PATH A: Fast Model + Search Intent (Reflex)

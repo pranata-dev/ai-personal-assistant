@@ -17,17 +17,34 @@ export default function Home() {
   const [spokenLanguage, setSpokenLanguage] = useState<'id-ID' | 'en-US' | 'auto'>('auto');
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
-  // Load memory on mount
+  // Load memory and fetch history on mount
   useEffect(() => {
-    setMemory(loadMemory());
+    const initialMemory = loadMemory();
+
+    fetch('http://localhost:8000/history')
+      .then(res => {
+        if (!res.ok) throw new Error('Failed to fetch history');
+        return res.json();
+      })
+      .then(history => {
+        setMemory({
+          ...initialMemory,
+          conversations: history
+        });
+      })
+      .catch(err => {
+        console.error('Failed to load history:', err);
+        // Fallback to local memory if backend fails, but warn
+        setMemory(initialMemory);
+      });
   }, []);
 
-  // Save memory when it changes
+  // Save preferences only (conversations are in DB)
   useEffect(() => {
     if (memory) {
       saveMemory(memory);
     }
-  }, [memory]);
+  }, [memory?.preferences]);
 
   const currentMode = memory?.preferences.currentMode ?? 'bestfriend';
   const currentLanguage = (memory?.preferences.language as Language) ?? 'en';

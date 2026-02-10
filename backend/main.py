@@ -5,7 +5,7 @@ from typing import List, Dict
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
-from sqlmodel import Session, select
+from sqlmodel import Session, select, delete
 from pydantic import BaseModel
 from openai import AsyncOpenAI
 from duckduckgo_search import DDGS
@@ -93,6 +93,13 @@ async def get_history(session: Session = Depends(get_session)):
     messages = session.exec(select(Message).order_by(Message.timestamp)).all()
     return messages
 
+@app.delete("/history")
+async def clear_history(session: Session = Depends(get_session)):
+    """Clears the entire chat history."""
+    session.exec(delete(Message))
+    session.commit()
+    return {"status": "success", "message": "History cleared"}
+
 @app.post("/upload")
 async def upload_document(file: UploadFile = File(...)):
     """Uploads a PDF/TXT document to the knowledge base."""
@@ -119,9 +126,15 @@ async def chat(req: ChatRequest, session: Session = Depends(get_session)):
         # RAG Retrieval
         user_query = last_msg["content"]
         print(f"📚 Searching knowledge base for: {user_query}")
-        retrieved_context = rag_system.search(user_query)
+        rag_result = rag_system.search(user_query)
+        retrieved_context = rag_result["context"]
+        sources = rag_result["sources"]
+        
+        # Format sources for prompt
+        source_list = ", ".join([s.split("\\")[-1].split("/")[-1] for s in sources]) # Clean filenames
     else:
         retrieved_context = ""
+        source_list = ""
     
     # System prompt
     SYSTEM_PROMPT = f"""
@@ -130,7 +143,13 @@ async def chat(req: ChatRequest, session: Session = Depends(get_session)):
     KNOWLEDGE BASE CONTEXT:
     {retrieved_context if retrieved_context else "No relevant documents found."}
     
+    SOURCES:
+    {source_list if source_list else "None"}
+    
     CRITICAL INSTRUCTION:
+    If 'KNOWLEDGE BASE CONTEXT' is provided, you MUST explicitly cite the filenames from 'SOURCES' when answering.
+    Example: "According to 'resume.pdf', the candidate has..."
+    
     If the user asks about current events, news, or real-time information that requires internet access, you MUST output a JSON object in this exact format:
     {"tool": "search", "query": "your search query here"}
     

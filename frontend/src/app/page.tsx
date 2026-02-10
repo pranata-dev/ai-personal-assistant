@@ -177,7 +177,7 @@ export default function Home() {
 
       {/* Main Content */}
       <MainArea>
-        <Header onClear={handleReset} />
+        <Header onClear={handleReset} currentModel={currentModel} onModelChange={setCurrentModel} />
         <div className="flex-1 min-h-0 relative">
           <ChatContainer
             messages={messages}

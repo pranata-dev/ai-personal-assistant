@@ -76,28 +76,37 @@ async def perform_web_search(query: str) -> str:
 
 # ---------- Endpoints ----------
 
+from fastapi import FastAPI, HTTPException, Depends, UploadFile, File
+# ... (existing imports, but add UploadFile, File)
+from rag import rag_system
+
+# ... (app, lifespan, models, middleware)
+
+# ---------- Endpoints ----------
+
 @app.get("/")
 async def root():
     return {"status": "ok", "service": "AI Assistant Backend", "model": MODEL}
-
 
 @app.get("/history", response_model=List[Message])
 async def get_history(session: Session = Depends(get_session)):
     messages = session.exec(select(Message).order_by(Message.timestamp)).all()
     return messages
 
-from fastapi.responses import StreamingResponse
+@app.post("/upload")
+async def upload_document(file: UploadFile = File(...)):
+    """Uploads a PDF/TXT document to the knowledge base."""
+    return await rag_system.ingest(file)
 
-# ... (other imports)
-
-@app.post("/chat")  # Removed response_model because it returns StreamingResponse
+@app.post("/chat")
 async def chat(req: ChatRequest, session: Session = Depends(get_session)):
     """
-    Agentic Loop (Streaming & Persistent):
+    Agentic Loop (Streaming, Persistent, & Contextual RAG):
+    0. Retrieve relevant documents (RAG).
     1. Receive full conversation history.
     2. Save User Message to DB.
     3. Stream Thinking/Response.
-    4. Save Assistant Response to DB (after stream).
+    4. Save Assistant Response to DB.
     """
     
     # Save User Message
@@ -106,10 +115,20 @@ async def chat(req: ChatRequest, session: Session = Depends(get_session)):
         user_msg = Message(role="user", content=last_msg["content"])
         session.add(user_msg)
         session.commit()
+        
+        # RAG Retrieval
+        user_query = last_msg["content"]
+        print(f"📚 Searching knowledge base for: {user_query}")
+        retrieved_context = rag_system.search(user_query)
+    else:
+        retrieved_context = ""
     
     # System prompt
-    SYSTEM_PROMPT = """
+    SYSTEM_PROMPT = f"""
     You are a helpful AI assistant.
+    
+    KNOWLEDGE BASE CONTEXT:
+    {retrieved_context if retrieved_context else "No relevant documents found."}
     
     CRITICAL INSTRUCTION:
     If the user asks about current events, news, or real-time information that requires internet access, you MUST output a JSON object in this exact format:
@@ -117,7 +136,7 @@ async def chat(req: ChatRequest, session: Session = Depends(get_session)):
     
     Do NOT output anything else if you want to search. Just the JSON.
     
-    If the user asks a normal question (coding, greetings, general knowledge), just answer normally.
+    If the user asks a normal question (coding, greetings, general knowledge), just answer normally using the provided KNOWLEDGE BASE CONTEXT if applicable.
     """
 
     async def generate():

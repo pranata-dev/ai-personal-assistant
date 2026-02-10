@@ -1,7 +1,7 @@
 import os
 import json
 from contextlib import asynccontextmanager
-from typing import List, Dict
+from typing import List, Dict, Optional
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
@@ -21,7 +21,7 @@ client = AsyncOpenAI(
     api_key=os.getenv("OPENROUTER_API_KEY"),
 )
 
-MODEL = "arcee-ai/trinity-large-preview:free"
+DEFAULT_MODEL = "tngtech/deepseek-r1t2-chimera:free"
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -50,6 +50,7 @@ app.add_middleware(
 
 class ChatRequest(BaseModel):
     messages: List[Dict[str, str]]
+    model: Optional[str] = None
 
 
 class ChatResponse(BaseModel):
@@ -86,7 +87,7 @@ from rag import rag_system
 
 @app.get("/")
 async def root():
-    return {"status": "ok", "service": "AI Assistant Backend", "model": MODEL}
+    return {"status": "ok", "service": "AI Assistant Backend", "default_model": DEFAULT_MODEL}
 
 @app.get("/history", response_model=List[Message])
 async def get_history(session: Session = Depends(get_session)):
@@ -158,6 +159,10 @@ async def chat(req: ChatRequest, session: Session = Depends(get_session)):
     If the user asks a normal question (coding, greetings, general knowledge), just answer normally using the provided KNOWLEDGE BASE CONTEXT if applicable.
     """
 
+    # Resolve model
+    active_model = req.model or DEFAULT_MODEL
+    print(f"🤖 Using model: {active_model}")
+
     async def generate():
         full_response = ""
         try:
@@ -165,7 +170,7 @@ async def chat(req: ChatRequest, session: Session = Depends(get_session)):
             messages = [{"role": "system", "content": SYSTEM_PROMPT}] + req.messages
             
             completion = await client.chat.completions.create(
-                model=MODEL,
+                model=active_model,
                 messages=messages,
                 extra_headers={"HTTP-Referer": "http://localhost:3000", "X-Title": "Local Jarvis"},
             )
@@ -192,7 +197,7 @@ async def chat(req: ChatRequest, session: Session = Depends(get_session)):
                     })
                     
                     stream = await client.chat.completions.create(
-                        model=MODEL,
+                        model=active_model,
                         messages=messages,
                         stream=True,
                         extra_headers={"HTTP-Referer": "http://localhost:3000", "X-Title": "Local Jarvis"},

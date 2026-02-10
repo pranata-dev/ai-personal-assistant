@@ -10,10 +10,10 @@ export interface Model {
 }
 
 export interface Message {
-  id: string;
+  id: string | number;
   role: 'user' | 'assistant';
   content: string;
-  timestamp: number;
+  timestamp: number | string;
   mode?: PersonalityMode;
 }
 
@@ -21,28 +21,11 @@ export interface UserPreferences {
   language: 'id' | 'en';
   explanationStyle: ExplanationStyle;
   currentMode: PersonalityMode;
-  currentModelId: string; // New field for model selection
+  currentModelId: string;
 }
 
 export interface Memory {
   conversations: Message[];
   preferences: UserPreferences;
   lastUpdated: number;
-}
-
-export interface KnowledgeBase {
-  user: {
-    name: string;
-    role: string;
-    interests: string[];
-    skills: string[];
-    projects: string[];
-  };
-  personality: {
-    modes: Record<PersonalityMode, {
-      tone: string;
-      emoji: string;
-      systemPrompt: string;
-    }>;
-  };
 }

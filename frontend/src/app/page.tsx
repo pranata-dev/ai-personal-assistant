@@ -82,10 +82,16 @@ export default function Home() {
     setIsLoading(true);
 
     try {
+      // Prepare context for backend (map to simple objects)
+      const context = updatedMemory.conversations.map(msg => ({
+        role: msg.role,
+        content: msg.content
+      }));
+
       const response = await fetch('http://localhost:8000/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: input }),
+        body: JSON.stringify({ messages: context }),
       });
 
       const data = await response.json();

@@ -5,7 +5,7 @@ from typing import List, Dict
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
-from sqlmodel import Session
+from sqlmodel import Session, select
 from pydantic import BaseModel
 from openai import AsyncOpenAI
 from duckduckgo_search import DDGS

@@ -9,6 +9,7 @@ import MainArea from '@/components/Workspace/MainArea';
 import SettingsModal from '@/components/SettingsModal';
 import { Language } from '@/lib/i18n';
 import Header from '@/components/Header';
+import { Toaster, toast } from 'sonner';
 
 export default function Home() {
   const [memory, setMemory] = useState<Memory | null>(null);
@@ -62,8 +63,21 @@ export default function Home() {
     });
   }, [memory]);
 
-  const handleReset = useCallback(() => {
-    setMemory(resetMemory());
+  const handleReset = useCallback(async () => {
+    if (!confirm("Are you sure you want to clear the entire chat history?")) return;
+
+    try {
+      const res = await fetch('http://localhost:8000/history', { method: 'DELETE' });
+      if (res.ok) {
+        setMemory(resetMemory());
+        toast.success("History cleared");
+      } else {
+        toast.error("Failed to clear history");
+      }
+    } catch (e) {
+      console.error(e);
+      toast.error("Error clearing history");
+    }
   }, []);
 
   const handleSend = useCallback(async (input: string) => {
@@ -150,6 +164,7 @@ export default function Home() {
 
   return (
     <div className="h-screen flex overflow-hidden font-sans bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100">
+      <Toaster position="top-center" />
       {/* Sidebar */}
       <Sidebar
         isOpen={isSidebarOpen}
@@ -160,7 +175,7 @@ export default function Home() {
 
       {/* Main Content */}
       <MainArea>
-        <Header onReset={handleReset} />
+        <Header onClear={handleReset} />
         <div className="flex-1 min-h-0 relative">
           <ChatContainer
             messages={messages}

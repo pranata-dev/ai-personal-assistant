@@ -1,5 +1,6 @@
 import os
 import json
+from typing import List, Dict
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -22,7 +23,7 @@ MODEL = "arcee-ai/trinity-large-preview:free"
 app = FastAPI(
     title="AI Assistant Backend",
     description="Python FastAPI backend powered by OpenRouter (Free Tier) with DuckDuckGo Search.",
-    version="1.1.0",
+    version="1.2.0",
 )
 
 # CORS
@@ -38,7 +39,7 @@ app.add_middleware(
 # ---------- Models ----------
 
 class ChatRequest(BaseModel):
-    message: str
+    messages: List[Dict[str, str]]
 
 
 class ChatResponse(BaseModel):
@@ -73,10 +74,10 @@ async def root():
 @app.post("/chat", response_model=ChatResponse)
 async def chat(req: ChatRequest):
     """
-    Agentic Loop:
-    1. Check if search is needed.
-    2. If yes, perform search and feed results back.
-    3. If no, return response directly.
+    Agentic Loop (Context Aware):
+    1. Receive full conversation history.
+    2. Check if search is needed (Thinking Loop).
+    3. Return final response.
     """
     
     # System prompt to enforce tool usage via JSON
@@ -93,12 +94,10 @@ async def chat(req: ChatRequest):
     """
 
     try:
-        # 1. First Pass: Ask the LLM
-        messages = [
-            {"role": "system", "content": SYSTEM_PROMPT},
-            {"role": "user", "content": req.message},
-        ]
+        # 1. Construct Context: System Prompt + History
+        messages = [{"role": "system", "content": SYSTEM_PROMPT}] + req.messages
 
+        # 2. First Pass: Ask the LLM
         completion = await client.chat.completions.create(
             model=MODEL,
             messages=messages,
@@ -110,7 +109,7 @@ async def chat(req: ChatRequest):
         
         initial_response = completion.choices[0].message.content.strip()
 
-        # 2. Check for Tool Call
+        # 3. Check for Tool Call
         if initial_response.startswith('{"tool": "search"'):
             try:
                 # Parse JSON
@@ -121,7 +120,8 @@ async def chat(req: ChatRequest):
                 print(f"🔎 Perform Search: {query}")
                 search_results = await perform_web_search(query)
                 
-                # 3. Second Pass: Answer with Context
+                # 4. Second Pass: Answer with Context
+                # Append the "Thinking" output and the results to the context
                 messages.append({"role": "assistant", "content": initial_response})
                 messages.append({
                     "role": "system", 

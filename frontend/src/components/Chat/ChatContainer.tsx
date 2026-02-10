@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useEffect } from 'react';
+import { useRef, useEffect, useState } from 'react';
 import { Message, PersonalityMode } from '@/types';
 import { t, Language } from '@/lib/i18n';
 import MessageBubble from './MessageBubble';
@@ -21,6 +21,8 @@ interface ChatContainerProps {
 
 export default function ChatContainer({ messages, mode, isLoading, onSend, spokenLanguage, language, currentModel, onModelChange }: ChatContainerProps) {
     const messagesEndRef = useRef<HTMLDivElement>(null);
+    const [typedText, setTypedText] = useState('');
+    const fullText = "Ready to solve problems together.";
 
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -29,6 +31,23 @@ export default function ChatContainer({ messages, mode, isLoading, onSend, spoke
     useEffect(() => {
         scrollToBottom();
     }, [messages, isLoading]);
+
+    // Typewriter effect for welcome message
+    useEffect(() => {
+        if (messages.length === 0) {
+            let currentIndex = 0;
+            const interval = setInterval(() => {
+                if (currentIndex <= fullText.length) {
+                    setTypedText(fullText.slice(0, currentIndex));
+                    currentIndex++;
+                } else {
+                    clearInterval(interval);
+                }
+            }, 50); // 50ms per character
+
+            return () => clearInterval(interval);
+        }
+    }, [messages.length]);
 
     return (
         <div className="flex flex-col h-full relative">
@@ -41,10 +60,11 @@ export default function ChatContainer({ messages, mode, isLoading, onSend, spoke
                                 <Bot size={32} />
                             </div>
                             <h2 className="text-xl font-medium text-zinc-800 dark:text-zinc-200 mb-2">
-                                {t('readyToCollaborate', language)}
+                                Hi, I'm Yume.
                             </h2>
-                            <p className="text-zinc-500 text-sm max-w-sm leading-relaxed mb-8">
-                                {t('emptyStateDesc', language)}
+                            <p className="text-zinc-500 text-sm max-w-sm leading-relaxed mb-8 min-h-[20px]">
+                                {typedText}
+                                {typedText.length < fullText.length && <span className="animate-pulse">|</span>}
                             </p>
 
                             <div className="grid grid-cols-2 gap-3 max-w-lg w-full">

@@ -1,4 +1,5 @@
 import os
+import re
 import json
 from contextlib import asynccontextmanager
 from typing import List, Dict, Optional
@@ -170,34 +171,52 @@ async def chat(req: ChatRequest, session: Session = Depends(get_session)):
             
             initial_response = completion.choices[0].message.content.strip()
 
-            # 2. Check for Tool Call
-            if initial_response.startswith('{"tool": "search"'):
-                try:
-                    tool_call = json.loads(initial_response)
-                    query = tool_call.get("query")
-                    
-                    print(f"🔎 Perform Search: {query}")
-                    search_results = await perform_web_search(query)
-                    
-                    # 3. Second Pass: Streaming answer with context
-                    messages.append({"role": "assistant", "content": initial_response})
-                    messages.append({
-                        "role": "system", 
-                        "content": f"Here are the search results for '{query}':\n\n{search_results}\n\nPlease answer the user's original question based on these results."
-                    })
-                    
-                    stream = await client.chat.completions.create(
-                        model=active_model,
-                        messages=messages,
-                        stream=True,
-                        extra_headers={"HTTP-Referer": "http://localhost:3000", "X-Title": "Yume"},
-                    )
+            # 2. Check for Tool Call using Regex
+            # Pattern looks for {"tool": "search", "query": "..."} allowing for whitespace and robust matching
+            tool_pattern = r'\{"tool":\s*"search",\s*"query":\s*"(.*?)"\}'
+            match = re.search(tool_pattern, initial_response, re.DOTALL)
 
-                    async for chunk in stream:
-                        content = chunk.choices[0].delta.content or ""
-                        if content:
-                            full_response += content
-                            yield content
+            if match:
+                try:
+                    # Extract the JSON string from the match matches the whole JSON object if I construct regex responsibly
+                    # But simpler: we know the structure. Let's just parse the whole matched string or reconstruct.
+                    # Actually, the user asked to search for the pattern then json.loads. 
+                    # Let's adjust regex to capture the full JSON object for safer parsing if possible, or just the query.
+                    # The user said: pattern: `\{"tool":\s*"search",\s*"query":\s*".*?"\}`
+                    # Let's use that to find the span, then substring, then json.loads.
+                    
+                    json_match = re.search(r'\{"tool":\s*"search",\s*"query":\s*".*?"\}', initial_response, re.DOTALL)
+                    if json_match:
+                        tool_json_str = json_match.group(0)
+                        tool_call = json.loads(tool_json_str)
+                        query = tool_call.get("query")
+                        
+                        print(f"🔎 Perform Search: {query}")
+                        search_results = await perform_web_search(query)
+                        
+                        # 3. Second Pass: Streaming answer with context
+                        messages.append({"role": "assistant", "content": initial_response})
+                        messages.append({
+                            "role": "system", 
+                            "content": f"Here are the search results for '{query}':\n\n{search_results}\n\nPlease answer the user's original question based on these results."
+                        })
+                        
+                        stream = await client.chat.completions.create(
+                            model=active_model,
+                            messages=messages,
+                            stream=True,
+                            extra_headers={"HTTP-Referer": "http://localhost:3000", "X-Title": "Yume"},
+                        )
+
+                        async for chunk in stream:
+                            content = chunk.choices[0].delta.content or ""
+                            if content:
+                                full_response += content
+                                yield content
+                    else:
+                        # Should not happen if outer match succeeded, but fallback safe
+                        full_response = initial_response
+                        yield initial_response
 
                 except json.JSONDecodeError:
                     full_response = initial_response

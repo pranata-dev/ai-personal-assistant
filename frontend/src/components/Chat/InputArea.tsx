@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, KeyboardEvent } from 'react';
+import { useState, useRef, KeyboardEvent, ChangeEvent, FormEvent } from 'react';
+import { Send, Paperclip } from 'lucide-react';
 import { PersonalityMode } from '@/types';
-import { ArrowUp } from 'lucide-react';
 import { Language } from '@/lib/i18n';
 
 interface InputAreaProps {
@@ -15,8 +15,10 @@ interface InputAreaProps {
 
 export default function InputArea({ onSend, isLoading }: InputAreaProps) {
     const [input, setInput] = useState('');
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
-    const handleSend = () => {
+    const handleSubmit = (e: FormEvent) => {
+        e.preventDefault();
         if (input.trim() && !isLoading) {
             onSend(input.trim());
             setInput('');
@@ -26,59 +28,79 @@ export default function InputArea({ onSend, isLoading }: InputAreaProps) {
     const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
-            handleSend();
+            handleSubmit(e);
+        }
+    };
+
+    const handleFileUpload = async (e: ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        const formData = new FormData();
+        formData.append('file', file);
+
+        try {
+            const res = await fetch('http://localhost:8000/upload', {
+                method: 'POST',
+                body: formData,
+            });
+
+            if (res.ok) {
+                alert("Knowledge Learned! 🧠\nI can now answer questions about this document.");
+            } else {
+                alert("Upload failed.");
+            }
+        } catch (error) {
+            console.error("Upload error:", error);
+            alert("Upload error.");
+        } finally {
+            // Reset file input
+            if (fileInputRef.current) fileInputRef.current.value = '';
         }
     };
 
     return (
-        <div className="px-4 py-3">
-            <div className="max-w-3xl mx-auto">
-                <div
-                    className={`
-                        relative flex items-end gap-2 bg-white dark:bg-zinc-900
-                        rounded-2xl border transition-all duration-200 shadow-sm
-                        ${input
-                            ? 'border-zinc-300 dark:border-zinc-700 shadow-md'
-                            : 'border-zinc-200 dark:border-zinc-800'
-                        }
-                    `}
+        <div className="p-4 bg-white dark:bg-zinc-900 border-t border-zinc-200 dark:border-zinc-800">
+            <div className="max-w-3xl mx-auto relative flex items-end gap-2 p-2 bg-zinc-100 dark:bg-zinc-800 rounded-2xl border border-transparent focus-within:border-zinc-300 dark:focus-within:border-zinc-700 transition-all">
+
+                {/* File Upload Button */}
+                <input
+                    type="file"
+                    ref={fileInputRef}
+                    onChange={handleFileUpload}
+                    className="hidden"
+                    accept=".pdf,.txt"
+                />
+                <button
+                    onClick={() => fileInputRef.current?.click()}
+                    className="p-2 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors"
+                    title="Upload Document"
+                    disabled={isLoading}
                 >
-                    <textarea
-                        value={input}
-                        onChange={(e) => setInput(e.target.value)}
-                        onKeyDown={handleKeyDown}
-                        placeholder="Send a message..."
-                        disabled={isLoading}
-                        className="flex-1 px-4 py-3 bg-transparent text-zinc-900 dark:text-zinc-100
-                            placeholder-zinc-400 dark:placeholder-zinc-500
-                            text-[15px] resize-none outline-none min-h-[48px] max-h-[160px]"
-                        rows={1}
-                    />
+                    <Paperclip className="w-5 h-5" />
+                </button>
 
-                    <div className="pr-2 pb-2">
-                        <button
-                            onClick={handleSend}
-                            disabled={!input.trim() || isLoading}
-                            className={`
-                                p-2 rounded-xl transition-all duration-200
-                                ${input.trim() && !isLoading
-                                    ? 'bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 hover:bg-zinc-700 dark:hover:bg-zinc-300'
-                                    : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-300 dark:text-zinc-600 cursor-not-allowed'
-                                }
-                            `}
-                        >
-                            {isLoading ? (
-                                <div className="w-4 h-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
-                            ) : (
-                                <ArrowUp size={16} strokeWidth={2.5} />
-                            )}
-                        </button>
-                    </div>
-                </div>
+                <textarea
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    onKeyDown={handleKeyDown}
+                    placeholder="Message..."
+                    rows={1}
+                    className="flex-1 bg-transparent border-none focus:ring-0 resize-none py-3 px-2 max-h-32 min-h-[44px] text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400"
+                    style={{ height: 'auto' }}
+                    disabled={isLoading}
+                />
 
-                <p className="text-center mt-2 text-[10px] text-zinc-400 dark:text-zinc-600">
-                    AI may produce inaccurate information.
-                </p>
+                <button
+                    onClick={handleSubmit}
+                    disabled={!input.trim() || isLoading}
+                    className="p-2 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 rounded-xl hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                >
+                    <Send className="w-5 h-5" />
+                </button>
+            </div>
+            <div className="text-center mt-2 text-xs text-zinc-400 dark:text-zinc-500">
+                AI may display inaccurate info, including about people, so double-check its responses.
             </div>
         </div>
     );

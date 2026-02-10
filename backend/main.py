@@ -179,9 +179,9 @@ async def chat(req: ChatRequest, session: Session = Depends(get_session)):
         keywords = ["news", "latest", "weather", "price", "stock", "score", "schedule", "current", "today"]
         if any(k in query.lower() for k in keywords):
             return True
-        # 2. Starts with 5W1H (Who, What, Where, When, Why, How)
-        pattern = r"^(who|what|where|when|why|how|is|are|was|were|do|does|did)\s"
-        if re.match(pattern, query, re.IGNORECASE):
+        # 2. Starts with 5W1H (Who, What, Where, When, Why, How) - allow leading non-word chars
+        pattern = r"^\W*(who|what|where|when|why|how|is|are|was|were|do|does|did)\b"
+        if re.search(pattern, query, re.IGNORECASE):
             return True
         # 3. Ends with question mark
         if query.strip().endswith("?"):
@@ -254,13 +254,13 @@ async def chat(req: ChatRequest, session: Session = Depends(get_session)):
                         
                         initial_response = completion.choices[0].message.content.strip()
 
-                        # 2. Check for Tool Call using Regex
-                        tool_pattern = r'\{"tool":\s*"search",\s*"query":\s*"(.*?)"\}'
+                        # 2. Check for Tool Call using Regex (Allow whitespace before closing brace)
+                        tool_pattern = r'\{"tool":\s*"search",\s*"query":\s*"(.*?)"\s*\}'
                         match = re.search(tool_pattern, initial_response, re.DOTALL)
 
                         if match:
                             try:
-                                json_match = re.search(r'\{"tool":\s*"search",\s*"query":\s*".*?"\}', initial_response, re.DOTALL)
+                                json_match = re.search(r'\{"tool":\s*"search",\s*"query":\s*".*?"\s*\}', initial_response, re.DOTALL)
                                 if json_match:
                                     tool_json_str = json_match.group(0)
                                     tool_call = json.loads(tool_json_str)
